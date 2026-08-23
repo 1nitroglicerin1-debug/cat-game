@@ -424,9 +424,13 @@
                 
                 canDrop = false;
                 
+                // ИСПРАВЛЕНИЕ ЗАВИСАНИЯ: Возвращаем шарику физику, гравитацию и отключаем режим "призрака"
+                Matter.Body.setStatic(activeDropper, false);
+                activeDropper.isSensor = false;
+                
                 activeDropper.createdAt = Date.now();
                 
-                // Когда отпускаем шарик, снимаем с него свойства Призрака
+                // Когда отпускаем шарик, снимаем его с крючка
                 activeDropper = null;
                 
                 setTimeout(() => {
@@ -613,8 +617,9 @@
             
             // ЛИНИЯ GAME OVER (Мягкая, оранжевая)
             ctx.beginPath();
-            ctx.moveTo(0, gameOverLineY);
-            ctx.lineTo(GAME_WIDTH, gameOverLineY);
+            // ИСПРАВЛЕНИЕ ЛИНИИ: Рисуем линию от -10 до +10 от краев экрана, чтобы она упиралась в бортики
+            ctx.moveTo(-10, gameOverLineY);
+            ctx.lineTo(GAME_WIDTH + 10, gameOverLineY);
             ctx.strokeStyle = 'rgba(255, 179, 71, 0.8)'; 
             ctx.lineWidth = 3;
             ctx.setLineDash([10, 10]);
