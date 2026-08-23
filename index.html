@@ -249,13 +249,14 @@
         const GAME_WIDTH = 320; 
         const GAME_HEIGHT = 650; 
         
-        // Немного увеличим разрыв в размерах, чтобы большие шары занимали еще больше места
-        const maxRadius = 100; 
-        const minRadius = 18; 
+        // Уменьшили макс. радиус, чтобы два самых больших шара (Лев или Тигр)
+        // гарантированно помещались в колбу шириной 320px. Теперь игру можно пройти!
+        const maxRadius = 75; 
+        const minRadius = 16; 
         const radiusStep = (maxRadius - minRadius) / 10;
 
         const CAT_LEVELS = [
-            { level: 0, emoji: '🐱', radius: minRadius, color: '#FFC0CB', points: 1 }, // Мягкие цвета
+            { level: 0, emoji: '🐱', radius: minRadius, color: '#FFC0CB', points: 1 },
             { level: 1, emoji: '😸', radius: minRadius + radiusStep*1, color: '#FFD700', points: 3 },
             { level: 2, emoji: '😹', radius: minRadius + radiusStep*2, color: '#FFA07A', points: 6 },
             { level: 3, emoji: '😻', radius: minRadius + radiusStep*3, color: '#98FB98', points: 10 },
@@ -286,7 +287,7 @@
         let canDrop = true;
         let dropCooldown = 800; 
         
-        const spawnY = 70; // Подняли точку спавна вверх (было 130)
+        const spawnY = 70; // Зона спавна высоко в безопасности
         const gameOverLineY = 160; 
         
         let warningStartTime = 0;
@@ -307,8 +308,7 @@
             engine = Engine.create();
             engine.world.gravity.y = 1.2; 
             
-            // ИСПРАВЛЕНИЕ 3 (Часть 1): Экстремально повышаем точность движка, 
-            // чтобы он лучше справлялся с башней из шаров и они не дрожали.
+            // Повышаем точность движка, чтобы он лучше справлялся с башней из шаров и они не дрожали.
             engine.positionIterations = 24; 
             engine.velocityIterations = 18;  
 
@@ -324,6 +324,7 @@
                 }
             });
 
+            // Формируем идеальное полукруглое дно из множества блоков
             const bowlRadius = GAME_WIDTH / 2;
             const bowlCenterY = GAME_HEIGHT - bowlRadius;
             const bowlParts = [];
@@ -395,7 +396,6 @@
                     clientX = e.clientX;
                 }
 
-                // scaleX корректно обрабатывает наше новое CSS-масштабирование (resizeApp)
                 const scaleX = GAME_WIDTH / rect.width;
                 return (clientX - rect.left) * scaleX;
             };
@@ -416,15 +416,13 @@
             const handleDrop = (e) => {
                 if (isGameOver || !activeDropper || !canDrop) return;
                 
-                // Исправление телепортации: на touchend не пытаемся получить новые координаты с экрана, 
-                // так как палец уже убран, а просто используем последние известные (lastInputX)
                 if (e.type !== 'touchend') {
                     handleMove(e);
                 }
                 
                 canDrop = false;
                 
-                // ИСПРАВЛЕНИЕ ЗАВИСАНИЯ: Возвращаем шарику физику, гравитацию и отключаем режим "призрака"
+                // Возвращаем шарику физику, гравитацию и отключаем режим "призрака"
                 Matter.Body.setStatic(activeDropper, false);
                 activeDropper.isSensor = false;
                 
@@ -444,7 +442,6 @@
             document.addEventListener('mousemove', handleMove);
             document.addEventListener('mouseup', handleDrop);
             
-            // Добавлено touchstart: шарик моментально привязывается к пальцу при касании
             document.addEventListener('touchstart', handleMove, { passive: false });
             document.addEventListener('touchmove', handleMove, { passive: false });
             document.addEventListener('touchend', handleDrop);
@@ -469,22 +466,18 @@
         function createCatBody(x, y, levelIndex, isStatic = false) {
             const data = CAT_LEVELS[levelIndex];
             
-            // ИСПРАВЛЕНИЕ 3 (Часть 2): Сплющиваем кривую массы. 
-            // Без этого огромные шары весят в 30 раз больше мелких из-за площади круга.
-            // Теперь мы снижаем плотность для больших шаров, чтобы разница в массе была не такой катастрофичной.
+            // Сплющиваем кривую массы, чтобы огромные шары не раздавливали маленькие
             const flatDensity = 0.001 * (minRadius / data.radius);
             
             const body = Bodies.circle(x, y, data.radius, {
                 isStatic: isStatic,
-                isSensor: isStatic,  // ИСПРАВЛЕНИЕ 1: Пока держим в руке — он Призрак (никого не пинает).
+                isSensor: isStatic,  // Пока держим в руке — он Призрак
                 label: levelIndex.toString(),
                 restitution: 0.2,
                 friction: 0.001,
-                density: flatDensity, // Применяем сглаженную плотность
-                slop: 0.05,           // Позволяет шарикам плотнее лежать без трясучки
-                render: {
-                    visible: false
-                }
+                density: flatDensity, 
+                slop: 0.05,          
+                render: { visible: false }
             });
             
             body.createdAt = Date.now(); 
@@ -520,9 +513,6 @@
                             bodiesToRemove.push(bodyA, bodyB);
                             
                             const newCat = createCatBody(midX, midY, newLevel);
-                            
-                            // УДАЛЕН искусственный импульс (setVelocity). 
-                            // Теперь шарики сливаются плавно и естественно, не подкидывая башню.
                             
                             bodiesToAdd.push(newCat);
 
@@ -567,9 +557,9 @@
                     
                     const radius = CAT_LEVELS[parseInt(body.label)].radius;
                     
-                    // ИСПРАВЛЕНИЕ ТАЙМЕРА:
-                    // 1. Проверяем, что шарик существует больше 1.5 секунд (исключает летящие сверху новые шары)
-                    // 2. Проверяем, что скорость почти нулевая (значит он покоится в куче)
+                    // Таймер:
+                    // 1. Проверяем, что шарик существует больше 1.5 секунд
+                    // 2. Проверяем, что он за линией и его скорость почти нулевая
                     if ((body.position.y - radius) < gameOverLineY && body.speed < 0.5) {
                         if (Date.now() - body.createdAt > 1500) {
                             anyBodyOverLine = true;
@@ -595,7 +585,6 @@
                         }
                     }
                 } else {
-                    // Если шарики улеглись и линия свободна — отменяем таймер
                     if (isWarningActive) {
                         isWarningActive = false;
                         document.getElementById('warning-screen').style.display = 'none';
@@ -615,18 +604,21 @@
         function customRender() {
             const ctx = render.context;
             
-            // ЛИНИЯ GAME OVER (Мягкая, оранжевая)
+            // ЛИНИЯ GAME OVER (Мягкая, оранжевая, математически идеальная)
             ctx.beginPath();
-            // ИСПРАВЛЕНИЕ ЛИНИИ: Рисуем линию от -10 до +10 от краев экрана, чтобы она упиралась в бортики
-            ctx.moveTo(-10, gameOverLineY);
-            ctx.lineTo(GAME_WIDTH + 10, gameOverLineY);
-            ctx.strokeStyle = 'rgba(255, 179, 71, 0.8)'; 
-            ctx.lineWidth = 3;
-            ctx.setLineDash([10, 10]);
+            
+            // ИСПРАВЛЕНИЕ: Мы рисуем ровно от 0 до GAME_WIDTH.
+            // Паттерн [12, 10] на длине 320px умещает ровно 15 штрихов по 12px и 14 пустот по 10px.
+            // Это значит, что линия начнется и закончится ровно штрихом у краев колбы, без зазоров!
+            ctx.moveTo(0, gameOverLineY);
+            ctx.lineTo(GAME_WIDTH, gameOverLineY);
+            ctx.strokeStyle = 'rgba(255, 179, 71, 0.9)'; 
+            ctx.lineWidth = 4;
+            ctx.setLineDash([12, 10]);
             ctx.stroke();
             ctx.setLineDash([]); 
 
-            // КАСТОМНАЯ ОТРИСОВКА ШАРИКОВ (Тень, Цвет, Эмодзи)
+            // КАСТОМНАЯ ОТРИСОВКА ШАРИКОВ
             const bodies = Composite.allBodies(engine.world);
             for (let body of bodies) {
                 if (body.label >= 0 && body.label <= 10) {
@@ -645,7 +637,7 @@
                     ctx.shadowOffsetY = 4;
                     ctx.fill();
 
-                    // 2. Сброс тени, чтобы эмодзи рисовался четко без грязи
+                    // 2. Сброс тени, чтобы эмодзи рисовался четко
                     ctx.shadowColor = 'transparent';
                     ctx.shadowBlur = 0;
                     ctx.shadowOffsetY = 0;
@@ -687,7 +679,6 @@
                 star.style.left = `${screenX}px`;
                 star.style.top = `${screenY}px`;
                 
-                // Случайный угол и дистанция разлета
                 const angle = Math.random() * Math.PI * 2;
                 const dist = 40 + Math.random() * 40;
                 star.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
