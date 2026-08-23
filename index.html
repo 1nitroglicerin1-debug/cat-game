@@ -37,7 +37,7 @@
         }
 
         #top-panel {
-            width: 350px;
+            width: 320px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -91,15 +91,15 @@
 
         #game-container {
             position: relative;
-            width: 350px; 
-            height: 650px; /* Увеличено на 150px для фикса обрезки */
+            width: 320px; 
+            height: 650px; 
             box-sizing: content-box;
             
             /* Стиль корзины */
             background: rgba(255, 235, 205, 0.4);
             border: 8px solid #FFB347; 
             border-top: none; /* Открытый верх */
-            border-radius: 0 0 175px 175px; 
+            border-radius: 0 0 168px 168px; 
             
             box-shadow: 0 15px 35px rgba(255, 179, 71, 0.15);
         }
@@ -109,7 +109,7 @@
             width: 100%;
             height: 100%;
             object-fit: fill;
-            border-radius: 0 0 167px 167px;
+            border-radius: 0 0 160px 160px;
         }
 
         #game-over-screen {
@@ -294,6 +294,15 @@
         
         let lastInputX = GAME_WIDTH / 2;
 
+        function resizeApp() {
+            const wrapper = document.getElementById('app-wrapper');
+            const availableHeight = window.innerHeight;
+            const availableWidth = window.innerWidth;
+            // Учитываем высоту колбы (650) + UI сверху (~100) + отступы
+            const scale = Math.min(1, availableHeight / 800, availableWidth / 360);
+            wrapper.style.transform = `scale(${scale})`;
+        }
+
         function init() {
             engine = Engine.create();
             engine.world.gravity.y = 1.2; 
@@ -354,6 +363,10 @@
             runner = Runner.create();
             Runner.run(runner, engine);
 
+            // Инициализация адаптивного масштабирования для мобильных
+            resizeApp();
+            window.addEventListener('resize', resizeApp);
+
             setupInput();
             setupCollisions();
             setupGameOverCheck();
@@ -367,7 +380,22 @@
                 const canvasEl = render.canvas;
                 if (!canvasEl) return lastInputX;
                 const rect = canvasEl.getBoundingClientRect();
-                let clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+                
+                let clientX;
+                if (e.type.includes('touch')) {
+                    // Поддержка всех видов касаний
+                    if (e.touches && e.touches.length > 0) {
+                        clientX = e.touches[0].clientX;
+                    } else if (e.changedTouches && e.changedTouches.length > 0) {
+                        clientX = e.changedTouches[0].clientX;
+                    } else {
+                        return lastInputX;
+                    }
+                } else {
+                    clientX = e.clientX;
+                }
+
+                // scaleX корректно обрабатывает наше новое CSS-масштабирование (resizeApp)
                 const scaleX = GAME_WIDTH / rect.width;
                 return (clientX - rect.left) * scaleX;
             };
@@ -388,17 +416,17 @@
             const handleDrop = (e) => {
                 if (isGameOver || !activeDropper || !canDrop) return;
                 
-                handleMove(e);
+                // Исправление телепортации: на touchend не пытаемся получить новые координаты с экрана, 
+                // так как палец уже убран, а просто используем последние известные (lastInputX)
+                if (e.type !== 'touchend') {
+                    handleMove(e);
+                }
+                
                 canDrop = false;
                 
                 activeDropper.createdAt = Date.now();
                 
-                // ИСПРАВЛЕНИЕ 1: Когда отпускаем шарик, снимаем с него свойства Призрака (isSensor) 
-                // и Статики (isStatic), чтобы он стал материальным и начал падать.
-                Matter.Body.set(activeDropper, { 
-                    isStatic: false, 
-                    isSensor: false 
-                });
+                // Когда отпускаем шарик, снимаем с него свойства Призрака
                 activeDropper = null;
                 
                 setTimeout(() => {
@@ -411,6 +439,9 @@
 
             document.addEventListener('mousemove', handleMove);
             document.addEventListener('mouseup', handleDrop);
+            
+            // Добавлено touchstart: шарик моментально привязывается к пальцу при касании
+            document.addEventListener('touchstart', handleMove, { passive: false });
             document.addEventListener('touchmove', handleMove, { passive: false });
             document.addEventListener('touchend', handleDrop);
         }
