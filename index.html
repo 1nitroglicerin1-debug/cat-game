@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cat Suika Game</title>
-    <!-- Include Tailwind CSS for quick layout and styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Include Matter.js for 2D physics -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
         body {
@@ -64,6 +62,26 @@
             color: #FF8C00;
         }
 
+        .btn-restart-small {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: #FF8C00;
+            transition: all 0.2s;
+            padding: 0;
+        }
+        
+        .btn-restart-small:active {
+            transform: scale(0.9);
+        }
+        
+        .btn-restart-small:hover {
+            background: #FFF9F0;
+        }
+
         .next-box-container {
             display: flex;
             align-items: center;
@@ -98,7 +116,7 @@
         #game-container {
             position: relative;
             width: 320px; 
-            height: 650px; 
+            height: 700px; /* Увеличено на 50px для запаса сверху */
             box-sizing: content-box;
             background: rgba(255, 235, 205, 0.4);
             border: 8px solid #FFB347; 
@@ -218,6 +236,14 @@
                 Score: <span id="score-val">0</span>
             </div>
             
+            <!-- Кнопка рестарта -->
+            <button class="solid-panel btn-restart-small" onclick="location.reload()" title="Restart">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                </svg>
+            </button>
+            
             <div class="solid-panel next-box-container">
                 <div class="next-label">Next</div>
                 <div class="next-img-wrapper">
@@ -243,13 +269,12 @@
 
     <script>
         const GAME_WIDTH = 320; 
-        const GAME_HEIGHT = 650; 
+        const GAME_HEIGHT = 700; // Увеличено на 50px для запаса сверху
         
         const maxRadius = 85; 
         const minRadius = 22; 
         const radiusStep = (maxRadius - minRadius) / 10;
 
-        // Конфигурация уровней с ИНДИВИДУАЛЬНЫМИ коэффициентами масштаба
         const CAT_LEVELS = [
             { level: 0, imgSrc: 'assets/cat1.png', radius: minRadius, color: '#FFC0CB', points: 1, img: null, renderScale: 1.22 },
             { level: 1, imgSrc: 'assets/cat2.png', radius: minRadius + radiusStep*1, color: '#FFD700', points: 3, img: null, renderScale: 1.22 },
@@ -259,14 +284,8 @@
             { level: 5, imgSrc: 'assets/cat6.png', radius: minRadius + radiusStep*5, color: '#87CEFA', points: 21, img: null, renderScale: 1.15 },
             { level: 6, imgSrc: 'assets/cat7.png', radius: minRadius + radiusStep*6, color: '#9370DB', points: 28, img: null, renderScale: 1.05 }, 
             { level: 7, imgSrc: 'assets/cat8.png', radius: minRadius + radiusStep*7, color: '#DDA0DD', points: 36, img: null, renderScale: 1.10 }, 
-            
-            // Леопард: У него вытянутые бока в самом PNG, поэтому мы используем widthSquish
             { level: 8, imgSrc: 'assets/cat9.png', radius: minRadius + radiusStep*8, color: '#F08080', points: 45, img: null, renderScale: 1.05, widthSquish: 0.85 }, 
-            
-            // Тигр: scale 1.18
             { level: 9, imgSrc: 'assets/cat10.png', radius: minRadius + radiusStep*9, color: '#FF69B4', points: 55, img: null, renderScale: 1.18 }, 
-            
-            // Лев: Уменьшили масштаб до 1.08, чтобы точно убрать наслаивание
             { level: 10, imgSrc: 'assets/cat11.png', radius: maxRadius, color: '#FF4500', points: 66, img: null, renderScale: 1.08 } 
         ];
 
@@ -288,10 +307,9 @@
         let canDrop = true;
         let dropCooldown = 800; 
         
-        let debugSpawnLevel = 0; // Для режима спавна по порядку
-        
-        const spawnY = 70; 
-        const gameOverLineY = 160; 
+        // Разносим точки спавна и линию проигрыша, чтобы было много безопасного пространства
+        const spawnY = 80; 
+        const gameOverLineY = 210; 
         
         let warningStartTime = 0;
         let isWarningActive = false;
@@ -323,7 +341,9 @@
             const wrapper = document.getElementById('app-wrapper');
             const availableHeight = window.innerHeight;
             const availableWidth = window.innerWidth;
-            const scale = Math.min(1, availableHeight / 800, availableWidth / 360);
+            
+            // Увеличили делители, чтобы искусственно отдалить игру (сделать масштаб меньше)
+            const scale = Math.min(1, availableHeight / 950, availableWidth / 420);
             wrapper.style.transform = `scale(${scale})`;
         }
 
@@ -347,7 +367,7 @@
             });
 
             const bowlRadius = GAME_WIDTH / 2;
-            const bowlCenterY = GAME_HEIGHT - bowlRadius;
+            const bowlCenterY = GAME_HEIGHT - bowlRadius; // Дно всегда в самом низу
             const bowlParts = [];
             const numParts = 35; 
             const partThickness = 60;
@@ -463,14 +483,6 @@
         }
 
         function rollNextCat() {
-            // --- РЕЖИМ РАЗРАБОТЧИКА (Закомментирован) ---
-            /*
-            nextCatLevel = debugSpawnLevel;
-            debugSpawnLevel++;
-            if(debugSpawnLevel > 10) debugSpawnLevel = 0; 
-            */
-            
-            // --- НОРМАЛЬНЫЙ РЕЖИМ (Случайный спавн) ---
             const pool = [0,0,0,0,0,0,0, 1,1,1,1,1, 2,2,2,2, 3,3, 4,4];
             nextCatLevel = pool[Math.floor(Math.random() * pool.length)];
 
@@ -575,11 +587,10 @@
                     const body = bodies[i];
                     if (body.isStatic || isNaN(parseInt(body.label))) continue;
                     
-                    // Мы больше не используем (body.position.y - radius) для таймера проигрыша.
-                    // Теперь проверяем чисто по body.position.y (это центр шарика).
-                    // Это означает, что таймер сработает только тогда, когда РОВНО ПОЛОВИНА 
-                    // шарика пересечет линию!
-                    if (body.position.y < gameOverLineY && body.speed < 0.5) {
+                    const radius = CAT_LEVELS[parseInt(body.label)].radius;
+                    
+                    // Условие: 40% котика пересекло линию проигрыша
+                    if ((body.position.y - radius * 0.2) < gameOverLineY && body.speed < 0.5) {
                         if (Date.now() - body.createdAt > 1500) {
                             anyBodyOverLine = true;
                             break; 
