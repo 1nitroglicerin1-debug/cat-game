@@ -266,7 +266,7 @@
             // Леопард: У него вытянутые бока в самом PNG, поэтому мы используем widthSquish
             { level: 8, imgSrc: 'assets/cat9.png', radius: minRadius + radiusStep*8, color: '#F08080', points: 45, img: null, renderScale: 1.05, widthSquish: 0.85 }, 
             
-            // Тигр: Вернули 1.18, как ты и просил
+            // Тигр: scale 1.18
             { level: 9, imgSrc: 'assets/cat10.png', radius: minRadius + radiusStep*9, color: '#FF69B4', points: 55, img: null, renderScale: 1.18 }, 
             
             // Лев: Уменьшили масштаб до 1.08, чтобы точно убрать наслаивание
@@ -291,7 +291,7 @@
         let canDrop = true;
         let dropCooldown = 800; 
         
-        let debugSpawnLevel = 0; // Для режима спавна по порядку
+        let debugSpawnLevel = 0; // Для режима спавна по порядку (если включить)
         
         const spawnY = 70; 
         const gameOverLineY = 160; 
@@ -349,6 +349,7 @@
                 }
             });
 
+            // Создание круглой формы дна корзины
             const bowlRadius = GAME_WIDTH / 2;
             const bowlCenterY = GAME_HEIGHT - bowlRadius;
             const bowlParts = [];
@@ -467,11 +468,19 @@
         }
 
         function rollNextCat() {
-            // --- РЕЖИМ РАЗРАБОТЧИКА ВКЛЮЧЕН ---
+            // --- РЕЖИМ РАЗРАБОТЧИКА (Закомментирован. Раскомментируй для теста по порядку) ---
+            /*
             nextCatLevel = debugSpawnLevel;
             debugSpawnLevel++;
             if(debugSpawnLevel > 10) debugSpawnLevel = 0; 
+            */
             
+            // --- НОРМАЛЬНЫЙ РЕЖИМ (Случайный спавн) ---
+            // Взвешенный рандом: дает больше шансов получить маленьких котов, 
+            // и небольшие шансы получить 3-5 уровни.
+            const pool = [0,0,0,0,0,0,0, 1,1,1,1,1, 2,2,2,2, 3,3, 4,4];
+            nextCatLevel = pool[Math.floor(Math.random() * pool.length)];
+
             const imgEl = document.getElementById('next-item-img');
             imgEl.src = CAT_LEVELS[nextCatLevel].imgSrc;
         }
