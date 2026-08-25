@@ -39,9 +39,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             z-index: 10;
-            gap: 10px;
+            gap: 15px;
         }
 
         .solid-panel {
@@ -117,13 +117,17 @@
         #game-container {
             position: relative;
             width: 320px; 
-            height: 700px; /* Увеличено на 50px для запаса сверху */
+            height: 700px;
             box-sizing: content-box;
-            background: rgba(255, 235, 205, 0.4);
-            border: 8px solid #FFB347; 
+            border: 22px solid transparent;
             border-top: none;
-            border-radius: 0 0 168px 168px; 
-            box-shadow: 0 15px 35px rgba(255, 179, 71, 0.15);
+            border-radius: 0 0 182px 182px; 
+            
+            /* Насыщенный теплый кремовый цвет, который не кажется белым на контрасте */
+            background: linear-gradient(#FDF0D5, #FDF0D5) padding-box,
+                        linear-gradient(180deg, #FFB347 0%, #FF6B00 100%) border-box;
+            
+            box-shadow: 0 15px 35px rgba(255, 179, 71, 0.2);
         }
 
         canvas {
@@ -237,7 +241,6 @@
                 Score: <span id="score-val">0</span>
             </div>
             
-            <!-- Кнопка рестарта -->
             <button class="solid-panel btn-restart-small" onclick="location.reload()" title="Restart">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
@@ -270,7 +273,7 @@
 
     <script>
         const GAME_WIDTH = 320; 
-        const GAME_HEIGHT = 700; // Увеличено на 50px для запаса сверху
+        const GAME_HEIGHT = 700; 
         
         const maxRadius = 85; 
         const minRadius = 22; 
@@ -281,8 +284,8 @@
             { level: 1, imgSrc: 'assets/cat2.png', radius: minRadius + radiusStep*1, color: '#FFD700', points: 3, img: null, renderScale: 1.22 },
             { level: 2, imgSrc: 'assets/cat3.png', radius: minRadius + radiusStep*2, color: '#FFA07A', points: 6, img: null, renderScale: 1.22 },
             { level: 3, imgSrc: 'assets/cat4.png', radius: minRadius + radiusStep*3, color: '#98FB98', points: 10, img: null, renderScale: 1.22 },
-            { level: 4, imgSrc: 'assets/cat5.png', radius: minRadius + radiusStep*4, color: '#20B2AA', points: 15, img: null, renderScale: 1.20 },
-            { level: 5, imgSrc: 'assets/cat6.png', radius: minRadius + radiusStep*5, color: '#87CEFA', points: 21, img: null, renderScale: 1.15 },
+            { level: 4, imgSrc: 'assets/cat5.png', radius: minRadius + radiusStep*4, color: '#20B2AA', points: 15, img: null, renderScale: 1.25 },
+            { level: 5, imgSrc: 'assets/cat6.png', radius: minRadius + radiusStep*5, color: '#87CEFA', points: 21, img: null, renderScale: 1.25 },
             { level: 6, imgSrc: 'assets/cat7.png', radius: minRadius + radiusStep*6, color: '#9370DB', points: 28, img: null, renderScale: 1.05 }, 
             { level: 7, imgSrc: 'assets/cat8.png', radius: minRadius + radiusStep*7, color: '#DDA0DD', points: 36, img: null, renderScale: 1.10 }, 
             { level: 8, imgSrc: 'assets/cat9.png', radius: minRadius + radiusStep*8, color: '#F08080', points: 45, img: null, renderScale: 1.05, widthSquish: 0.85 }, 
@@ -308,7 +311,6 @@
         let canDrop = true;
         let dropCooldown = 800; 
         
-        // Разносим точки спавна и линию проигрыша, чтобы было много безопасного пространства
         const spawnY = 80; 
         const gameOverLineY = 210; 
         
@@ -316,6 +318,9 @@
         let isWarningActive = false;
         
         let lastInputX = GAME_WIDTH / 2;
+
+        // Массив для хранения анимаций слияния (лерп стягивания)
+        let mergeAnimations = [];
 
         function preloadImages(callback) {
             let loadedCount = 0;
@@ -343,8 +348,7 @@
             const availableHeight = window.innerHeight;
             const availableWidth = window.innerWidth;
             
-            // Увеличили делители, чтобы искусственно отдалить игру (сделать масштаб меньше)
-            const scale = Math.min(1, availableHeight / 950, availableWidth / 420);
+            const scale = Math.min(1, availableHeight / 1000, availableWidth / 450);
             wrapper.style.transform = `scale(${scale})`;
         }
 
@@ -368,7 +372,7 @@
             });
 
             const bowlRadius = GAME_WIDTH / 2;
-            const bowlCenterY = GAME_HEIGHT - bowlRadius; // Дно всегда в самом низу
+            const bowlCenterY = GAME_HEIGHT - bowlRadius; 
             const bowlParts = [];
             const numParts = 35; 
             const partThickness = 60;
@@ -410,7 +414,7 @@
 
             setupInput();
             setupCollisions();
-            setupGameOverCheck();
+            setupGameLoop(); // Заменили setupGameOverCheck
 
             rollNextCat();
             spawnDropper(); 
@@ -487,6 +491,12 @@
             const pool = [0,0,0,0,0,0,0, 1,1,1,1,1, 2,2,2,2, 3,3, 4,4];
             nextCatLevel = pool[Math.floor(Math.random() * pool.length)];
 
+            // РЕЖИМ РАЗРАБОТЧИКА (Раскомментируй для спавна по порядку от 1 до 11)
+            // nextCatLevel = (nextCatLevel + 1) % 11;
+            // if (typeof window.debugCatIndex === 'undefined') window.debugCatIndex = 0;
+            // nextCatLevel = window.debugCatIndex;
+            // window.debugCatIndex = (window.debugCatIndex + 1) % 11;
+
             const imgEl = document.getElementById('next-item-img');
             imgEl.src = CAT_LEVELS[nextCatLevel].imgSrc;
         }
@@ -525,7 +535,6 @@
                 
                 const pairs = event.pairs;
                 const bodiesToRemove = [];
-                const bodiesToAdd = [];
 
                 for (let i = 0; i < pairs.length; i++) {
                     const bodyA = pairs[i].bodyA;
@@ -540,25 +549,29 @@
 
                         if (level < CAT_LEVELS.length - 1) {
                             const newLevel = level + 1;
+                            // Находим центральную точку, куда они будут стягиваться
                             const midX = (bodyA.position.x + bodyB.position.x) / 2;
                             const midY = (bodyA.position.y + bodyB.position.y) / 2;
 
                             bodiesToRemove.push(bodyA, bodyB);
                             
-                            const newCat = createCatBody(midX, midY, newLevel);
-                            bodiesToAdd.push(newCat);
-
-                            updateScore(CAT_LEVELS[newLevel].points);
-                            createMergeExplosion(midX, midY);
+                            // Добавляем в массив анимаций вместо мгновенного спавна
+                            mergeAnimations.push({
+                                level: level,
+                                newLevel: newLevel,
+                                points: CAT_LEVELS[newLevel].points,
+                                x1: bodyA.position.x, y1: bodyA.position.y, angle1: bodyA.angle,
+                                x2: bodyB.position.x, y2: bodyB.position.y, angle2: bodyB.angle,
+                                midX: midX, midY: midY,
+                                startTime: Date.now(),
+                                duration: 150 // мс на анимацию стягивания
+                            });
                         }
                     }
                 }
 
                 if (bodiesToRemove.length > 0) {
                     Composite.remove(engine.world, bodiesToRemove);
-                }
-                if (bodiesToAdd.length > 0) {
-                    Composite.add(engine.world, bodiesToAdd);
                 }
             });
         }
@@ -576,10 +589,31 @@
             }, 150);
         }
 
-        function setupGameOverCheck() {
+        function setupGameLoop() {
             Events.on(engine, 'beforeUpdate', function() {
                 if (isGameOver) return;
 
+                const now = Date.now();
+                
+                // 1. Проверяем завершение анимаций слияния и спавним новые шары
+                for (let i = mergeAnimations.length - 1; i >= 0; i--) {
+                    const anim = mergeAnimations[i];
+                    if (now - anim.startTime >= anim.duration) {
+                        // Спавним нового кота
+                        const newCat = createCatBody(anim.midX, anim.midY, anim.newLevel);
+                        newCat.isMergeResult = true; // Флаг для анимации Pop!
+                        newCat.createdAt = now;
+                        
+                        Composite.add(engine.world, newCat);
+                        updateScore(anim.points);
+                        createMergeExplosion(anim.midX, anim.midY);
+                        
+                        // Удаляем анимацию из массива
+                        mergeAnimations.splice(i, 1);
+                    }
+                }
+
+                // 2. Проверяем Game Over
                 const bodies = Composite.allBodies(engine.world);
                 let anyBodyOverLine = false;
 
@@ -589,7 +623,7 @@
                     
                     const radius = CAT_LEVELS[parseInt(body.label)].radius;
                     
-                    // Условие: 40% котика пересекло линию проигрыша
+                    // Пересечение на 40%
                     if ((body.position.y - radius * 0.2) < gameOverLineY && body.speed < 0.5) {
                         if (Date.now() - body.createdAt > 1500) {
                             anyBodyOverLine = true;
@@ -633,7 +667,9 @@
 
         function customRender() {
             const ctx = render.context;
+            const now = Date.now();
             
+            // Отрисовка пунктирной линии
             ctx.beginPath();
             ctx.moveTo(0, gameOverLineY);
             ctx.lineTo(GAME_WIDTH, gameOverLineY);
@@ -643,6 +679,7 @@
             ctx.stroke();
             ctx.setLineDash([]); 
 
+            // 1. Отрисовка обычных статичных и физических шариков
             const bodies = Composite.allBodies(engine.world);
             for (let body of bodies) {
                 if (body.label >= 0 && body.label <= 10) {
@@ -654,19 +691,72 @@
                         ctx.translate(body.position.x, body.position.y);
                         ctx.rotate(body.isStatic ? 0 : body.angle);
                         
+                        // Пружинистая анимация появления (Pop) для только что слитых
+                        let popScale = 1;
+                        if (body.isMergeResult) {
+                            const age = now - body.createdAt;
+                            const growTime = 150;
+                            const shrinkTime = 300; // Total 300ms
+                            
+                            if (age < growTime) {
+                                // Растет от 0 до 1.2
+                                popScale = (age / growTime) * 1.2;
+                            } else if (age < shrinkTime) {
+                                // Возвращается к 1.0
+                                popScale = 1.2 - ((age - growTime) / growTime) * 0.2;
+                            } else {
+                                body.isMergeResult = false; // Завершаем анимацию
+                            }
+                        }
+                        
                         const aspectRatio = data.img.width / data.img.height;
                         const renderScale = data.renderScale; 
-                        
                         const squish = data.widthSquish || 1; 
                         
-                        const drawHeight = data.radius * 2 * renderScale;
+                        const drawHeight = data.radius * 2 * renderScale * popScale;
                         const drawWidth = drawHeight * aspectRatio * squish;
                         
                         ctx.drawImage(data.img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-                        
                         ctx.restore();
                     }
                 }
+            }
+
+            // 2. Отрисовка активных анимаций слияния (поверх остальных)
+            for (let anim of mergeAnimations) {
+                const data = CAT_LEVELS[anim.level];
+                if (!data.img || !data.img.complete) continue;
+
+                // t: от 0 до 1
+                let t = (now - anim.startTime) / anim.duration;
+                if (t > 1) t = 1;
+
+                const drawMergeHalf = (startX, startY, startAngle) => {
+                    const currX = startX + (anim.midX - startX) * t;
+                    const currY = startY + (anim.midY - startY) * t;
+                    
+                    ctx.save();
+                    ctx.translate(currX, currY);
+                    ctx.rotate(startAngle); // Сохраняем исходный угол для красоты
+                    
+                    // Слегка сжимаются по мере слияния (до 60% размера)
+                    const shrinkScale = 1 - (0.4 * t); 
+                    
+                    const aspectRatio = data.img.width / data.img.height;
+                    const renderScale = data.renderScale; 
+                    const squish = data.widthSquish || 1; 
+                    
+                    const drawHeight = data.radius * 2 * renderScale * shrinkScale;
+                    const drawWidth = drawHeight * aspectRatio * squish;
+                    
+                    // Делаем слегка прозрачными в конце
+                    ctx.globalAlpha = 1 - (0.3 * t); 
+                    ctx.drawImage(data.img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                    ctx.restore();
+                };
+
+                drawMergeHalf(anim.x1, anim.y1, anim.angle1);
+                drawMergeHalf(anim.x2, anim.y2, anim.angle2);
             }
         }
 
