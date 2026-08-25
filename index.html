@@ -35,12 +35,13 @@
         }
 
         #top-panel {
-            width: 320px;
+            width: 350px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
             z-index: 10;
+            gap: 10px;
         }
 
         .solid-panel {
@@ -51,7 +52,7 @@
         }
 
         .score-box {
-            padding: 10px 20px;
+            padding: 8px 15px;
             font-size: 20px;
             font-weight: bold;
             color: #4A3F35;
@@ -86,7 +87,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 5px 15px;
+            padding: 5px 12px;
         }
 
         .next-label {
@@ -349,10 +350,10 @@
 
         function init() {
             engine = Engine.create();
-            engine.world.gravity.y = 1.2; 
+            engine.world.gravity.y = 1.6; 
             
-            engine.positionIterations = 24; 
-            engine.velocityIterations = 18;  
+            engine.positionIterations = 30; 
+            engine.velocityIterations = 20;  
 
             render = Render.create({
                 element: document.getElementById('canvas-wrapper'),
@@ -500,15 +501,14 @@
 
         function createCatBody(x, y, levelIndex, isStatic = false) {
             const data = CAT_LEVELS[levelIndex];
-            const flatDensity = 0.001 * (minRadius / data.radius);
             
             const body = Bodies.circle(x, y, data.radius, {
                 isStatic: isStatic,
                 isSensor: isStatic, 
                 label: levelIndex.toString(),
-                restitution: 0.2,
-                friction: 0.001,
-                density: flatDensity, 
+                restitution: 0.04,
+                friction: 0.005,
+                density: 0.002, 
                 slop: 0.05,          
                 render: { visible: false }
             });
