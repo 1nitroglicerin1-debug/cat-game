@@ -16,7 +16,7 @@
             background: #FDFBF7; /* Теплый кремовый фон */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             touch-action: none;
-            color: #4A3F35; /* Мягкий темный текст */
+            color: #4A3F35;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -77,16 +77,22 @@
             font-size: 14px;
         }
 
-        .next-emoji {
+        .next-img-wrapper {
             background: #FFF9F0;
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 26px;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        #next-item-img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
         }
 
         #game-container {
@@ -108,7 +114,6 @@
             display: block;
             width: 100%;
             height: 100%;
-            object-fit: fill;
             border-radius: 0 0 160px 160px;
         }
 
@@ -130,7 +135,6 @@
         
         #game-over-screen h1 {
             color: #FF8C00;
-            text-shadow: none;
         }
 
         .btn-restart {
@@ -147,16 +151,10 @@
             box-shadow: 0 4px 10px rgba(255, 179, 71, 0.4);
         }
         
-        .btn-restart:hover {
-            background-color: #FFA500;
-            transform: translateY(-2px);
-        }
-
         .btn-restart:active {
             transform: scale(0.95);
         }
 
-        /* Анимации для эффекта слияния (Juice) */
         .merge-glow {
             position: absolute;
             width: 120px;
@@ -225,14 +223,15 @@
             
             <div class="solid-panel next-box-container">
                 <div class="next-label">Next</div>
-                <div class="next-emoji" id="next-item-emoji">🐱</div>
+                <div class="next-img-wrapper">
+                    <img id="next-item-img" src="" alt="Next Cat">
+                </div>
             </div>
         </div>
 
         <div id="game-container">
             <div id="canvas-wrapper" style="width: 100%; height: 100%; position: relative;"></div>
 
-            <!-- Экран предупреждения (таймер) -->
             <div id="warning-screen">
                 <div class="warning-text" id="warning-timer">3</div>
             </div>
@@ -249,24 +248,29 @@
         const GAME_WIDTH = 320; 
         const GAME_HEIGHT = 650; 
         
-        // Уменьшили макс. радиус, чтобы два самых больших шара (Лев или Тигр)
-        // гарантированно помещались в колбу шириной 320px. Теперь игру можно пройти!
-        const maxRadius = 75; 
-        const minRadius = 16; 
+        const maxRadius = 85; 
+        const minRadius = 22; 
         const radiusStep = (maxRadius - minRadius) / 10;
 
+        // Конфигурация уровней с ИНДИВИДУАЛЬНЫМИ коэффициентами масштаба
         const CAT_LEVELS = [
-            { level: 0, emoji: '🐱', radius: minRadius, color: '#FFC0CB', points: 1 },
-            { level: 1, emoji: '😸', radius: minRadius + radiusStep*1, color: '#FFD700', points: 3 },
-            { level: 2, emoji: '😹', radius: minRadius + radiusStep*2, color: '#FFA07A', points: 6 },
-            { level: 3, emoji: '😻', radius: minRadius + radiusStep*3, color: '#98FB98', points: 10 },
-            { level: 4, emoji: '😼', radius: minRadius + radiusStep*4, color: '#20B2AA', points: 15 },
-            { level: 5, emoji: '😽', radius: minRadius + radiusStep*5, color: '#87CEFA', points: 21 },
-            { level: 6, emoji: '🙀', radius: minRadius + radiusStep*6, color: '#9370DB', points: 28 },
-            { level: 7, emoji: '😿', radius: minRadius + radiusStep*7, color: '#DDA0DD', points: 36 },
-            { level: 8, emoji: '😾', radius: minRadius + radiusStep*8, color: '#F08080', points: 45 },
-            { level: 9, emoji: '🦁', radius: minRadius + radiusStep*9, color: '#FF69B4', points: 55 },
-            { level: 10, emoji: '🐯', radius: maxRadius, color: '#FF4500', points: 66 }
+            { level: 0, imgSrc: 'assets/cat1.png', radius: minRadius, color: '#FFC0CB', points: 1, img: null, renderScale: 1.22 },
+            { level: 1, imgSrc: 'assets/cat2.png', radius: minRadius + radiusStep*1, color: '#FFD700', points: 3, img: null, renderScale: 1.22 },
+            { level: 2, imgSrc: 'assets/cat3.png', radius: minRadius + radiusStep*2, color: '#FFA07A', points: 6, img: null, renderScale: 1.22 },
+            { level: 3, imgSrc: 'assets/cat4.png', radius: minRadius + radiusStep*3, color: '#98FB98', points: 10, img: null, renderScale: 1.22 },
+            { level: 4, imgSrc: 'assets/cat5.png', radius: minRadius + radiusStep*4, color: '#20B2AA', points: 15, img: null, renderScale: 1.20 },
+            { level: 5, imgSrc: 'assets/cat6.png', radius: minRadius + radiusStep*5, color: '#87CEFA', points: 21, img: null, renderScale: 1.15 },
+            { level: 6, imgSrc: 'assets/cat7.png', radius: minRadius + radiusStep*6, color: '#9370DB', points: 28, img: null, renderScale: 1.05 }, 
+            { level: 7, imgSrc: 'assets/cat8.png', radius: minRadius + radiusStep*7, color: '#DDA0DD', points: 36, img: null, renderScale: 1.10 }, 
+            
+            // Леопард: У него вытянутые бока в самом PNG, поэтому мы используем widthSquish
+            { level: 8, imgSrc: 'assets/cat9.png', radius: minRadius + radiusStep*8, color: '#F08080', points: 45, img: null, renderScale: 1.05, widthSquish: 0.85 }, 
+            
+            // Тигр: Вернули 1.18, как ты и просил
+            { level: 9, imgSrc: 'assets/cat10.png', radius: minRadius + radiusStep*9, color: '#FF69B4', points: 55, img: null, renderScale: 1.18 }, 
+            
+            // Лев: Уменьшили масштаб до 1.08, чтобы точно убрать наслаивание
+            { level: 10, imgSrc: 'assets/cat11.png', radius: maxRadius, color: '#FF4500', points: 66, img: null, renderScale: 1.08 } 
         ];
 
         const Engine = Matter.Engine,
@@ -287,7 +291,9 @@
         let canDrop = true;
         let dropCooldown = 800; 
         
-        const spawnY = 70; // Зона спавна высоко в безопасности
+        let debugSpawnLevel = 0; // Для режима спавна по порядку
+        
+        const spawnY = 70; 
         const gameOverLineY = 160; 
         
         let warningStartTime = 0;
@@ -295,11 +301,31 @@
         
         let lastInputX = GAME_WIDTH / 2;
 
+        function preloadImages(callback) {
+            let loadedCount = 0;
+            const totalImages = CAT_LEVELS.length;
+            
+            CAT_LEVELS.forEach(cat => {
+                const img = new Image();
+                img.onload = () => {
+                    cat.img = img;
+                    loadedCount++;
+                    if (loadedCount === totalImages) {
+                        callback();
+                    }
+                };
+                img.onerror = () => {
+                    loadedCount++;
+                    if (loadedCount === totalImages) callback();
+                };
+                img.src = cat.imgSrc;
+            });
+        }
+
         function resizeApp() {
             const wrapper = document.getElementById('app-wrapper');
             const availableHeight = window.innerHeight;
             const availableWidth = window.innerWidth;
-            // Учитываем высоту колбы (650) + UI сверху (~100) + отступы
             const scale = Math.min(1, availableHeight / 800, availableWidth / 360);
             wrapper.style.transform = `scale(${scale})`;
         }
@@ -308,7 +334,6 @@
             engine = Engine.create();
             engine.world.gravity.y = 1.2; 
             
-            // Повышаем точность движка, чтобы он лучше справлялся с башней из шаров и они не дрожали.
             engine.positionIterations = 24; 
             engine.velocityIterations = 18;  
 
@@ -324,7 +349,6 @@
                 }
             });
 
-            // Формируем идеальное полукруглое дно из множества блоков
             const bowlRadius = GAME_WIDTH / 2;
             const bowlCenterY = GAME_HEIGHT - bowlRadius;
             const bowlParts = [];
@@ -364,7 +388,6 @@
             runner = Runner.create();
             Runner.run(runner, engine);
 
-            // Инициализация адаптивного масштабирования для мобильных
             resizeApp();
             window.addEventListener('resize', resizeApp);
 
@@ -384,7 +407,6 @@
                 
                 let clientX;
                 if (e.type.includes('touch')) {
-                    // Поддержка всех видов касаний
                     if (e.touches && e.touches.length > 0) {
                         clientX = e.touches[0].clientX;
                     } else if (e.changedTouches && e.changedTouches.length > 0) {
@@ -422,13 +444,10 @@
                 
                 canDrop = false;
                 
-                // Возвращаем шарику физику, гравитацию и отключаем режим "призрака"
                 Matter.Body.setStatic(activeDropper, false);
                 activeDropper.isSensor = false;
                 
                 activeDropper.createdAt = Date.now();
-                
-                // Когда отпускаем шарик, снимаем его с крючка
                 activeDropper = null;
                 
                 setTimeout(() => {
@@ -448,11 +467,13 @@
         }
 
         function rollNextCat() {
-            // Взвешенный рандом: уровень 4 теперь имеет 10% шанс (2 из 20 элементов).
-            const pool = [0,0,0,0,0,0,0, 1,1,1,1,1, 2,2,2,2, 3,3, 4,4];
-            nextCatLevel = pool[Math.floor(Math.random() * pool.length)];
+            // --- РЕЖИМ РАЗРАБОТЧИКА ВКЛЮЧЕН ---
+            nextCatLevel = debugSpawnLevel;
+            debugSpawnLevel++;
+            if(debugSpawnLevel > 10) debugSpawnLevel = 0; 
             
-            document.getElementById('next-item-emoji').innerText = CAT_LEVELS[nextCatLevel].emoji;
+            const imgEl = document.getElementById('next-item-img');
+            imgEl.src = CAT_LEVELS[nextCatLevel].imgSrc;
         }
 
         function spawnDropper() {
@@ -465,13 +486,11 @@
 
         function createCatBody(x, y, levelIndex, isStatic = false) {
             const data = CAT_LEVELS[levelIndex];
-            
-            // Сплющиваем кривую массы, чтобы огромные шары не раздавливали маленькие
             const flatDensity = 0.001 * (minRadius / data.radius);
             
             const body = Bodies.circle(x, y, data.radius, {
                 isStatic: isStatic,
-                isSensor: isStatic,  // Пока держим в руке — он Призрак
+                isSensor: isStatic, 
                 label: levelIndex.toString(),
                 restitution: 0.2,
                 friction: 0.001,
@@ -513,7 +532,6 @@
                             bodiesToRemove.push(bodyA, bodyB);
                             
                             const newCat = createCatBody(midX, midY, newLevel);
-                            
                             bodiesToAdd.push(newCat);
 
                             updateScore(CAT_LEVELS[newLevel].points);
@@ -557,9 +575,6 @@
                     
                     const radius = CAT_LEVELS[parseInt(body.label)].radius;
                     
-                    // Таймер:
-                    // 1. Проверяем, что шарик существует больше 1.5 секунд
-                    // 2. Проверяем, что он за линией и его скорость почти нулевая
                     if ((body.position.y - radius) < gameOverLineY && body.speed < 0.5) {
                         if (Date.now() - body.createdAt > 1500) {
                             anyBodyOverLine = true;
@@ -604,51 +619,39 @@
         function customRender() {
             const ctx = render.context;
             
-            // ЛИНИЯ GAME OVER (Мягкая, оранжевая, математически идеальная)
             ctx.beginPath();
-            
-            // ИСПРАВЛЕНИЕ: Мы рисуем ровно от 0 до GAME_WIDTH.
-            // Паттерн [12, 10] на длине 320px умещает ровно 15 штрихов по 12px и 14 пустот по 10px.
-            // Это значит, что линия начнется и закончится ровно штрихом у краев колбы, без зазоров!
             ctx.moveTo(0, gameOverLineY);
             ctx.lineTo(GAME_WIDTH, gameOverLineY);
-            ctx.strokeStyle = 'rgba(255, 179, 71, 0.9)'; 
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(255, 179, 71, 0.8)'; 
+            ctx.lineWidth = 3;
             ctx.setLineDash([12, 10]);
             ctx.stroke();
             ctx.setLineDash([]); 
 
-            // КАСТОМНАЯ ОТРИСОВКА ШАРИКОВ
             const bodies = Composite.allBodies(engine.world);
             for (let body of bodies) {
                 if (body.label >= 0 && body.label <= 10) {
                     const data = CAT_LEVELS[body.label];
                     
-                    ctx.save();
-                    ctx.translate(body.position.x, body.position.y);
-                    ctx.rotate(body.angle);
-                    
-                    // 1. Отрисовка круга с мягкой тенью
-                    ctx.beginPath();
-                    ctx.arc(0, 0, data.radius, 0, 2 * Math.PI);
-                    ctx.fillStyle = data.color;
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-                    ctx.shadowBlur = 10;
-                    ctx.shadowOffsetY = 4;
-                    ctx.fill();
-
-                    // 2. Сброс тени, чтобы эмодзи рисовался четко
-                    ctx.shadowColor = 'transparent';
-                    ctx.shadowBlur = 0;
-                    ctx.shadowOffsetY = 0;
-                    
-                    // 3. Отрисовка Эмодзи
-                    ctx.font = `${data.radius * 1.15}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(data.emoji, 0, 0);
-                    
-                    ctx.restore();
+                    if (data.img && data.img.complete && data.img.height > 0) {
+                        ctx.save();
+                        
+                        ctx.translate(body.position.x, body.position.y);
+                        ctx.rotate(body.isStatic ? 0 : body.angle);
+                        
+                        const aspectRatio = data.img.width / data.img.height;
+                        const renderScale = data.renderScale; 
+                        
+                        // Применяем сплющивание, если оно задано в конфиге (как у Леопарда)
+                        const squish = data.widthSquish || 1; 
+                        
+                        const drawHeight = data.radius * 2 * renderScale;
+                        const drawWidth = drawHeight * aspectRatio * squish;
+                        
+                        ctx.drawImage(data.img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                        
+                        ctx.restore();
+                    }
                 }
             }
         }
@@ -664,14 +667,12 @@
             const screenX = x * scaleX;
             const screenY = y * scaleY;
             
-            // Свечение (Glow)
             const glow = document.createElement('div');
             glow.className = 'merge-glow';
             glow.style.left = `${screenX}px`;
             glow.style.top = `${screenY}px`;
             canvasWrapper.appendChild(glow);
             
-            // Звездочки (Stars)
             for(let i = 0; i < 4; i++) {
                 const star = document.createElement('div');
                 star.className = 'merge-star';
@@ -696,7 +697,11 @@
             }, 400); 
         }
 
-        window.onload = init;
+        window.onload = () => {
+            preloadImages(() => {
+                init();
+            });
+        };
     </script>
 </body>
 </html>
