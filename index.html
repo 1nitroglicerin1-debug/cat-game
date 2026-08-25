@@ -11,7 +11,11 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #FDFBF7;
+            background-color: #FDFBF7;
+            background-image: url('assets/bg.jpg'); /* Глобальный фон */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             touch-action: none;
             color: #4A3F35;
@@ -21,6 +25,12 @@
             justify-content: center;
             height: 100vh;
             width: 100vw;
+        }
+
+        @media (orientation: portrait) {
+            body {
+                background-image: url('assets/bg-mobile.jpg');
+            }
         }
 
         #app-wrapper {
@@ -119,13 +129,18 @@
             width: 320px; 
             height: 700px;
             box-sizing: content-box;
-            border: 22px solid transparent;
+            
+            /* Делаем стены надежным сплошным цветом, чтобы избежать багов заливки в браузерах */
+            border: 22px solid #FF8C00;
             border-top: none;
             border-radius: 0 0 182px 182px; 
             
-            /* Насыщенный теплый кремовый цвет, который не кажется белым на контрасте */
-            background: linear-gradient(#FDF0D5, #FDF0D5) padding-box,
-                        linear-gradient(180deg, #FFB347 0%, #FF6B00 100%) border-box;
+            /* Тот самый легкий теплый крем для стекла */
+            background-color: rgba(255, 250, 240, 0.4);
+            
+            /* Эффект размытия только ЗА колбой */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             
             box-shadow: 0 15px 35px rgba(255, 179, 71, 0.2);
         }
@@ -135,6 +150,7 @@
             width: 100%;
             height: 100%;
             border-radius: 0 0 160px 160px;
+            background-color: transparent; /* Полностью прозрачный холст */
         }
 
         #game-over-screen {
@@ -275,22 +291,18 @@
         const GAME_WIDTH = 320; 
         const GAME_HEIGHT = 700; 
         
-        const maxRadius = 85; 
-        const minRadius = 22; 
-        const radiusStep = (maxRadius - minRadius) / 10;
-
         const CAT_LEVELS = [
-            { level: 0, imgSrc: 'assets/cat1.png', radius: minRadius, color: '#FFC0CB', points: 1, img: null, renderScale: 1.22 },
-            { level: 1, imgSrc: 'assets/cat2.png', radius: minRadius + radiusStep*1, color: '#FFD700', points: 3, img: null, renderScale: 1.22 },
-            { level: 2, imgSrc: 'assets/cat3.png', radius: minRadius + radiusStep*2, color: '#FFA07A', points: 6, img: null, renderScale: 1.22 },
-            { level: 3, imgSrc: 'assets/cat4.png', radius: minRadius + radiusStep*3, color: '#98FB98', points: 10, img: null, renderScale: 1.22 },
-            { level: 4, imgSrc: 'assets/cat5.png', radius: minRadius + radiusStep*4, color: '#20B2AA', points: 15, img: null, renderScale: 1.25 },
-            { level: 5, imgSrc: 'assets/cat6.png', radius: minRadius + radiusStep*5, color: '#87CEFA', points: 21, img: null, renderScale: 1.25 },
-            { level: 6, imgSrc: 'assets/cat7.png', radius: minRadius + radiusStep*6, color: '#9370DB', points: 28, img: null, renderScale: 1.05 }, 
-            { level: 7, imgSrc: 'assets/cat8.png', radius: minRadius + radiusStep*7, color: '#DDA0DD', points: 36, img: null, renderScale: 1.10 }, 
-            { level: 8, imgSrc: 'assets/cat9.png', radius: minRadius + radiusStep*8, color: '#F08080', points: 45, img: null, renderScale: 1.05, widthSquish: 0.85 }, 
-            { level: 9, imgSrc: 'assets/cat10.png', radius: minRadius + radiusStep*9, color: '#FF69B4', points: 55, img: null, renderScale: 1.18 }, 
-            { level: 10, imgSrc: 'assets/cat11.png', radius: maxRadius, color: '#FF4500', points: 66, img: null, renderScale: 1.08 } 
+            { level: 0, imgSrc: 'assets/cat1.png', radius: 22, color: '#FFC0CB', points: 1, img: null, renderScale: 1.22 },
+            { level: 1, imgSrc: 'assets/cat2.png', radius: 26, color: '#FFD700', points: 3, img: null, renderScale: 1.22 },
+            { level: 2, imgSrc: 'assets/cat3.png', radius: 30, color: '#FFA07A', points: 6, img: null, renderScale: 1.22 },
+            { level: 3, imgSrc: 'assets/cat4.png', radius: 36, color: '#98FB98', points: 10, img: null, renderScale: 1.22 },
+            { level: 4, imgSrc: 'assets/cat5.png', radius: 43, color: '#20B2AA', points: 15, img: null, renderScale: 1.25 },
+            { level: 5, imgSrc: 'assets/cat6.png', radius: 51, color: '#87CEFA', points: 21, img: null, renderScale: 1.15 }, 
+            { level: 6, imgSrc: 'assets/cat7.png', radius: 60, color: '#9370DB', points: 28, img: null, renderScale: 1.05 }, 
+            { level: 7, imgSrc: 'assets/cat8.png', radius: 70, color: '#DDA0DD', points: 36, img: null, renderScale: 1.05 }, 
+            { level: 8, imgSrc: 'assets/cat9.png?v=new3', radius: 82, color: '#F08080', points: 45, img: null, renderScale: 1.16 }, 
+            { level: 9, imgSrc: 'assets/cat10.png', radius: 90, color: '#FF69B4', points: 55, img: null, renderScale: 1.17 }, 
+            { level: 10, imgSrc: 'assets/cat11.png', radius: 100, color: '#FF4500', points: 66, img: null, renderScale: 1.04 } 
         ];
 
         const Engine = Matter.Engine,
@@ -319,7 +331,6 @@
         
         let lastInputX = GAME_WIDTH / 2;
 
-        // Массив для хранения анимаций слияния (лерп стягивания)
         let mergeAnimations = [];
 
         function preloadImages(callback) {
@@ -354,10 +365,10 @@
 
         function init() {
             engine = Engine.create();
-            engine.world.gravity.y = 1.6; 
+            engine.world.gravity.y = 1.0; 
             
-            engine.positionIterations = 30; 
-            engine.velocityIterations = 20;  
+            engine.positionIterations = 8; 
+            engine.velocityIterations = 6;  
 
             render = Render.create({
                 element: document.getElementById('canvas-wrapper'),
@@ -375,7 +386,8 @@
             const bowlCenterY = GAME_HEIGHT - bowlRadius; 
             const bowlParts = [];
             const numParts = 35; 
-            const partThickness = 60;
+            
+            const partThickness = 200; 
             const physicsBowlRadius = bowlRadius + (partThickness / 2); 
             
             for (let i = 0; i < numParts; i++) {
@@ -388,17 +400,18 @@
                     isStatic: true,
                     angle: angle + Math.PI / 2,
                     render: { visible: false }, 
-                    friction: 0.05
+                    friction: 0.1,
+                    restitution: 0 
                 });
                 bowlParts.push(part);
             }
 
-            const wallThickness = 60;
+            const wallThickness = 200; 
             const leftWall = Bodies.rectangle(-wallThickness/2, bowlCenterY / 2, wallThickness, GAME_HEIGHT * 2, { 
-                isStatic: true, render: { visible: false } 
+                isStatic: true, render: { visible: false }, friction: 0.1, restitution: 0 
             });
             const rightWall = Bodies.rectangle(GAME_WIDTH + wallThickness/2, bowlCenterY / 2, wallThickness, GAME_HEIGHT * 2, { 
-                isStatic: true, render: { visible: false } 
+                isStatic: true, render: { visible: false }, friction: 0.1, restitution: 0 
             });
 
             Composite.add(engine.world, [leftWall, rightWall, ...bowlParts]);
@@ -414,7 +427,7 @@
 
             setupInput();
             setupCollisions();
-            setupGameLoop(); // Заменили setupGameOverCheck
+            setupGameLoop(); 
 
             rollNextCat();
             spawnDropper(); 
@@ -488,14 +501,12 @@
         }
 
         function rollNextCat() {
-            const pool = [0,0,0,0,0,0,0, 1,1,1,1,1, 2,2,2,2, 3,3, 4,4];
-            nextCatLevel = pool[Math.floor(Math.random() * pool.length)];
-
-            // РЕЖИМ РАЗРАБОТЧИКА (Раскомментируй для спавна по порядку от 1 до 11)
-            // nextCatLevel = (nextCatLevel + 1) % 11;
-            // if (typeof window.debugCatIndex === 'undefined') window.debugCatIndex = 0;
-            // nextCatLevel = window.debugCatIndex;
-            // window.debugCatIndex = (window.debugCatIndex + 1) % 11;
+            const rand = Math.random();
+            if (rand < 0.4) nextCatLevel = 0;      
+            else if (rand < 0.7) nextCatLevel = 1; 
+            else if (rand < 0.9) nextCatLevel = 2; 
+            else if (rand < 0.97) nextCatLevel = 3;
+            else nextCatLevel = 4;                 
 
             const imgEl = document.getElementById('next-item-img');
             imgEl.src = CAT_LEVELS[nextCatLevel].imgSrc;
@@ -516,9 +527,8 @@
                 isStatic: isStatic,
                 isSensor: isStatic, 
                 label: levelIndex.toString(),
-                restitution: 0.04,
-                friction: 0.005,
-                density: 0.002, 
+                restitution: 0.1, 
+                friction: 0.1,    
                 slop: 0.05,          
                 render: { visible: false }
             });
@@ -549,13 +559,11 @@
 
                         if (level < CAT_LEVELS.length - 1) {
                             const newLevel = level + 1;
-                            // Находим центральную точку, куда они будут стягиваться
                             const midX = (bodyA.position.x + bodyB.position.x) / 2;
                             const midY = (bodyA.position.y + bodyB.position.y) / 2;
 
                             bodiesToRemove.push(bodyA, bodyB);
                             
-                            // Добавляем в массив анимаций вместо мгновенного спавна
                             mergeAnimations.push({
                                 level: level,
                                 newLevel: newLevel,
@@ -564,7 +572,7 @@
                                 x2: bodyB.position.x, y2: bodyB.position.y, angle2: bodyB.angle,
                                 midX: midX, midY: midY,
                                 startTime: Date.now(),
-                                duration: 150 // мс на анимацию стягивания
+                                duration: 150 
                             });
                         }
                     }
@@ -595,36 +603,32 @@
 
                 const now = Date.now();
                 
-                // 1. Проверяем завершение анимаций слияния и спавним новые шары
                 for (let i = mergeAnimations.length - 1; i >= 0; i--) {
                     const anim = mergeAnimations[i];
                     if (now - anim.startTime >= anim.duration) {
-                        // Спавним нового кота
                         const newCat = createCatBody(anim.midX, anim.midY, anim.newLevel);
-                        newCat.isMergeResult = true; // Флаг для анимации Pop!
+                        newCat.isMergeResult = true; 
                         newCat.createdAt = now;
                         
                         Composite.add(engine.world, newCat);
                         updateScore(anim.points);
                         createMergeExplosion(anim.midX, anim.midY);
                         
-                        // Удаляем анимацию из массива
                         mergeAnimations.splice(i, 1);
                     }
                 }
 
-                // 2. Проверяем Game Over
                 const bodies = Composite.allBodies(engine.world);
                 let anyBodyOverLine = false;
 
                 for (let i = 0; i < bodies.length; i++) {
                     const body = bodies[i];
+
                     if (body.isStatic || isNaN(parseInt(body.label))) continue;
                     
                     const radius = CAT_LEVELS[parseInt(body.label)].radius;
                     
-                    // Пересечение на 40%
-                    if ((body.position.y - radius * 0.2) < gameOverLineY && body.speed < 0.5) {
+                    if ((body.position.y - radius * 0.2) < gameOverLineY && (body.speed < 0.5)) {
                         if (Date.now() - body.createdAt > 1500) {
                             anyBodyOverLine = true;
                             break; 
@@ -669,7 +673,6 @@
             const ctx = render.context;
             const now = Date.now();
             
-            // Отрисовка пунктирной линии
             ctx.beginPath();
             ctx.moveTo(0, gameOverLineY);
             ctx.lineTo(GAME_WIDTH, gameOverLineY);
@@ -679,7 +682,6 @@
             ctx.stroke();
             ctx.setLineDash([]); 
 
-            // 1. Отрисовка обычных статичных и физических шариков
             const bodies = Composite.allBodies(engine.world);
             for (let body of bodies) {
                 if (body.label >= 0 && body.label <= 10) {
@@ -691,43 +693,38 @@
                         ctx.translate(body.position.x, body.position.y);
                         ctx.rotate(body.isStatic ? 0 : body.angle);
                         
-                        // Пружинистая анимация появления (Pop) для только что слитых
                         let popScale = 1;
                         if (body.isMergeResult) {
                             const age = now - body.createdAt;
                             const growTime = 150;
-                            const shrinkTime = 300; // Total 300ms
+                            const shrinkTime = 300; 
                             
                             if (age < growTime) {
-                                // Растет от 0 до 1.2
                                 popScale = (age / growTime) * 1.2;
                             } else if (age < shrinkTime) {
-                                // Возвращается к 1.0
                                 popScale = 1.2 - ((age - growTime) / growTime) * 0.2;
                             } else {
-                                body.isMergeResult = false; // Завершаем анимацию
+                                body.isMergeResult = false; 
                             }
                         }
                         
                         const aspectRatio = data.img.width / data.img.height;
                         const renderScale = data.renderScale; 
-                        const squish = data.widthSquish || 1; 
                         
                         const drawHeight = data.radius * 2 * renderScale * popScale;
-                        const drawWidth = drawHeight * aspectRatio * squish;
+                        const drawWidth = drawHeight * aspectRatio;
                         
                         ctx.drawImage(data.img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                        
                         ctx.restore();
                     }
                 }
             }
 
-            // 2. Отрисовка активных анимаций слияния (поверх остальных)
             for (let anim of mergeAnimations) {
                 const data = CAT_LEVELS[anim.level];
                 if (!data.img || !data.img.complete) continue;
 
-                // t: от 0 до 1
                 let t = (now - anim.startTime) / anim.duration;
                 if (t > 1) t = 1;
 
@@ -737,21 +734,19 @@
                     
                     ctx.save();
                     ctx.translate(currX, currY);
-                    ctx.rotate(startAngle); // Сохраняем исходный угол для красоты
+                    ctx.rotate(startAngle); 
                     
-                    // Слегка сжимаются по мере слияния (до 60% размера)
                     const shrinkScale = 1 - (0.4 * t); 
                     
                     const aspectRatio = data.img.width / data.img.height;
                     const renderScale = data.renderScale; 
-                    const squish = data.widthSquish || 1; 
                     
                     const drawHeight = data.radius * 2 * renderScale * shrinkScale;
-                    const drawWidth = drawHeight * aspectRatio * squish;
+                    const drawWidth = drawHeight * aspectRatio;
                     
-                    // Делаем слегка прозрачными в конце
                     ctx.globalAlpha = 1 - (0.3 * t); 
                     ctx.drawImage(data.img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                    
                     ctx.restore();
                 };
 
