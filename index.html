@@ -145,14 +145,9 @@
             /* Стены из крафтового картона */
             border: 22px solid #C48A5E;
             border-top: none;
-            border-radius: 0 0 182px 182px; 
             
-            /* Эффект матового стекла (очень легкий кремовый оттенок) */
-            background-color: rgba(255, 245, 230, 0.15);
-            
-            /* Эффект размытия только ЗА колбой */
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            /* Эффект прозрачного бликующего пластика (без размытия) */
+            background-color: rgba(255, 255, 255, 0.05);
             
             /* Внутренняя тень для объема выреза и легкая внешняя тень */
             box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4),
@@ -163,7 +158,6 @@
             display: block;
             width: 100%;
             height: 100%;
-            border-radius: 0 0 160px 160px;
             background-color: transparent;
         }
 
@@ -468,40 +462,27 @@
                 }
             });
 
-            const bowlRadius = GAME_WIDTH / 2;
-            const bowlCenterY = GAME_HEIGHT - bowlRadius; 
-            const bowlParts = [];
-            const numParts = 35; 
-            
-            const partThickness = 200; 
-            const physicsBowlRadius = bowlRadius + (partThickness / 2); 
-            
-            for (let i = 0; i < numParts; i++) {
-                const angle = Math.PI - (i + 0.5) * (Math.PI / numParts);
-                const x = GAME_WIDTH / 2 + physicsBowlRadius * Math.cos(angle);
-                const y = bowlCenterY + physicsBowlRadius * Math.sin(angle);
-                const partLength = (Math.PI * physicsBowlRadius) / numParts;
-
-                const part = Bodies.rectangle(x, y, partLength * 1.5, partThickness, {
-                    isStatic: true,
-                    angle: angle + Math.PI / 2,
-                    render: { visible: false }, 
-                    friction: 1.0,       // Максимальное трение для пола
-                    frictionStatic: 1.0, // Чтобы коты крепко держались
-                    restitution: 0 
-                });
-                bowlParts.push(part);
-            }
-
             const wallThickness = 200; 
-            const leftWall = Bodies.rectangle(-wallThickness/2, bowlCenterY / 2, wallThickness, GAME_HEIGHT * 2, { 
+            
+            // Абсолютно плоское горизонтальное дно
+            const floor = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT + wallThickness / 2, GAME_WIDTH + wallThickness * 2, wallThickness, {
+                isStatic: true,
+                render: { visible: false }, 
+                friction: 1.0,       // Максимальное трение для пола
+                frictionStatic: 1.0, // Чтобы коты крепко держались и не скользили
+                restitution: 0 
+            });
+
+            // Прямоугольные вертикальные стены
+            const leftWall = Bodies.rectangle(-wallThickness / 2, GAME_HEIGHT / 2, wallThickness, GAME_HEIGHT * 2, { 
                 isStatic: true, render: { visible: false }, friction: 1.0, frictionStatic: 1.0, restitution: 0 
             });
-            const rightWall = Bodies.rectangle(GAME_WIDTH + wallThickness/2, bowlCenterY / 2, wallThickness, GAME_HEIGHT * 2, { 
+            const rightWall = Bodies.rectangle(GAME_WIDTH + wallThickness / 2, GAME_HEIGHT / 2, wallThickness, GAME_HEIGHT * 2, { 
                 isStatic: true, render: { visible: false }, friction: 1.0, frictionStatic: 1.0, restitution: 0 
             });
 
-            Composite.add(engine.world, [leftWall, rightWall, ...bowlParts]);
+            // Добавляем ровно 3 прямоугольных элемента
+            Composite.add(engine.world, [leftWall, rightWall, floor]);
 
             Events.on(render, 'afterRender', customRender);
 
