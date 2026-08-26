@@ -45,44 +45,51 @@
         }
 
         #top-panel {
-            width: 350px;
+            width: 360px;
+            max-width: 95vw;
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 25px;
             z-index: 10;
-            gap: 15px;
+            gap: 10px;
         }
 
         .solid-panel {
-            background: #ffffff;
-            border: none;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            border-radius: 16px;
+            background: rgba(255, 250, 240, 0.85); /* Полупрозрачный теплый картон */
+            border: 3px solid #C48A5E; /* Цвет крафтовой коробки */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            border-radius: 20px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #5D4037; /* Темно-коричневый текст под маркер */
         }
 
         .score-box {
-            padding: 8px 15px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #4A3F35;
+            padding: 10px 15px;
+            font-size: 22px;
+            font-weight: 800;
             transition: transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         #score-val {
-            color: #FF8C00;
+            color: #D35400; /* Насыщенный карамельный/оранжевый */
         }
 
         .btn-restart-small {
-            width: 45px;
-            height: 45px;
+            width: 55px;
+            height: 55px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            color: #FF8C00;
+            color: #D35400;
             transition: all 0.2s;
             padding: 0;
+            flex-shrink: 0;
         }
         
         .btn-restart-small:active {
@@ -90,38 +97,41 @@
         }
         
         .btn-restart-small:hover {
-            background: #FFF9F0;
+            background: rgba(196, 138, 94, 0.15);
         }
 
         .next-box-container {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 5px 12px;
+            gap: 12px;
+            padding: 8px 12px;
         }
 
         .next-label {
-            font-weight: bold;
-            color: #4A3F35;
-            font-size: 14px;
+            font-weight: 900;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .next-img-wrapper {
-            background: #FFF9F0;
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px dashed #C48A5E; /* Пунктирная граница в стиле штампа */
+            width: 65px;
+            height: 65px;
+            border-radius: 16px;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
             overflow: hidden;
         }
         
         #next-item-img {
-            max-width: 90%;
-            max-height: 90%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
+            transform: scale(1.15); /* Делаем картинку крупнее внутри окошка */
         }
 
         #game-container {
@@ -152,7 +162,7 @@
             width: 100%;
             height: 100%;
             border-radius: 0 0 160px 160px;
-            background-color: transparent; /* Полностью прозрачный холст */
+            background-color: transparent;
         }
 
         #game-over-screen {
@@ -162,35 +172,42 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(253, 251, 247, 0.9);
+            background: rgba(248, 238, 223, 0.85); /* Легкий оттенок бумаги */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 20;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #4A3F35;
+            color: #5D4037;
             border-radius: inherit;
         }
         
         #game-over-screen h1 {
-            color: #FF8C00;
+            color: #D35400;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 0px #FFF;
         }
 
         .btn-restart {
             margin-top: 20px;
-            padding: 12px 30px;
-            font-size: 18px;
-            background-color: #FFB347;
+            padding: 15px 35px;
+            font-size: 20px;
+            background-color: #C48A5E; /* Под цвет коробки */
             color: #ffffff;
-            border: none;
-            border-radius: 20px;
+            border: 3px solid #8C6239; /* Темные рамки */
+            border-radius: 30px;
             cursor: pointer;
-            transition: all 0.2s;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(255, 179, 71, 0.4);
+            transition: all 0.1s;
+            font-weight: 800;
+            box-shadow: 0 6px 0 #8C6239, 0 10px 15px rgba(0,0,0,0.1); /* Объемная кнопка */
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .btn-restart:active {
-            transform: scale(0.95);
+            transform: translateY(4px); /* Кнопка вдавливается вниз */
+            box-shadow: 0 2px 0 #8C6239, 0 4px 5px rgba(0,0,0,0.1);
         }
 
         .merge-glow {
@@ -326,44 +343,80 @@
         let dropCooldown = 800; 
         
         // --- Audio System ---
-        const sfx = {
-            drop: new Audio('assets/drop.mp3'),
-            merge: new Audio('assets/merge.mp3'),
-            gameover: new Audio('assets/gameover.mp3'),
-            victory: new Audio('assets/victory.mp3')
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const audioBuffers = {};
+        
+        const audioPaths = {
+            drop: './assets/drop.mp3',
+            merge: './assets/merge.mp3',
+            gameover: './assets/gameover.mp3',
+            victory: './assets/victory.mp3'
         };
-        let audioUnlocked = false;
 
-        function playSound(name) {
-            if (!sfx[name]) return;
-            // Клонируем ноду для наложения звуков (Overlap)
-            const clone = sfx[name].cloneNode(true);
-            
-            // Настраиваем громкость: drop делаем максимальным, остальные тише
-            if (name === 'drop') {
-                clone.volume = 1.0;
-            } else {
-                clone.volume = 0.5;
+        // Асинхронная предзагрузка всех аудиофайлов в память (AudioBuffer)
+        async function preloadAudio() {
+            // Создаем тихий буфер-заглушку на случай фатальной ошибки
+            const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+
+            for (const [name, path] of Object.entries(audioPaths)) {
+                try {
+                    const response = await fetch(path);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                    audioBuffers[name] = audioBuffer;
+                    console.log(`[Audio] Успешно загружен: ${name}`);
+                } catch (error) {
+                    console.error(`[Audio Error] Ошибка загрузки звука ${name} по пути ${path}:`, error);
+                    audioBuffers[name] = silentBuffer;
+                }
             }
-            
-            // catch нужен, чтобы браузер не спамил ошибками, если звук попытается сыграть до разблокировки
-            clone.play().catch(() => {});
         }
 
+        // Разблокировка Autoplay политики браузера при первом тапе/клике
         function unlockAudio() {
-            if (audioUnlocked) return;
-            // Беззвучно проигрываем все звуки при первом клике, чтобы разблокировать Audio API
-            Object.values(sfx).forEach(audio => {
-                audio.muted = true;
-                audio.play().then(() => {
-                    audio.pause();
-                    audio.muted = false;
-                    audio.currentTime = 0;
-                }).catch(() => {});
-            });
-            audioUnlocked = true;
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => {
+                    console.log("[Audio] Контекст успешно разблокирован!");
+                }).catch(err => {
+                    console.error("[Audio] Ошибка при попытке разблокировать контекст:", err);
+                });
+            }
+            // Снимаем слушатели после успешной попытки
+            document.removeEventListener('pointerdown', unlockAudio);
             document.removeEventListener('touchstart', unlockAudio);
             document.removeEventListener('mousedown', unlockAudio);
+        }
+
+        // Вешаем слушатели ГЛОБАЛЬНО и СРАЗУ, чтобы не пропустить первый клик во время предзагрузки
+        document.addEventListener('pointerdown', unlockAudio, { passive: true });
+        document.addEventListener('touchstart', unlockAudio, { passive: true });
+        document.addEventListener('mousedown', unlockAudio, { passive: true });
+
+        // Мгновенное воспроизведение без задержек
+        function playSound(name, volumeMultiplier = 1.0) {
+            if (!audioCtx || !audioBuffers[name]) return;
+            
+            try {
+                // Создаем новый источник звука для каждого воспроизведения
+                const source = audioCtx.createBufferSource();
+                source.buffer = audioBuffers[name];
+                
+                // Создаем узел управления громкостью (GainNode)
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.value = volumeMultiplier;
+                
+                // Соединяем: Источник -> Громкость -> Динамики (destination)
+                source.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                // Мгновенный запуск
+                source.start(0);
+            } catch (err) {
+                console.error(`[Audio Play Error] Ошибка при проигрывании ${name}:`, err);
+            }
         }
         // --------------------
 
@@ -525,7 +578,8 @@
                 Matter.Body.setStatic(activeDropper, false);
                 activeDropper.isSensor = false;
                 
-                playSound('drop'); // Проигрываем звук сброса
+                // Проигрываем звук сброса с увеличенным в 2 раза множителем громкости
+                playSound('drop', 2.0); 
                 
                 activeDropper.createdAt = Date.now();
                 activeDropper = null;
@@ -544,10 +598,6 @@
             document.addEventListener('touchstart', handleMove, { passive: false });
             document.addEventListener('touchmove', handleMove, { passive: false });
             document.addEventListener('touchend', handleDrop);
-
-            // Слушатели для разблокировки звука при первом взаимодействии
-            document.addEventListener('mousedown', unlockAudio);
-            document.addEventListener('touchstart', unlockAudio, { passive: true });
         }
 
         function rollNextCat() {
@@ -858,7 +908,9 @@
             }, 400); 
         }
 
-        window.onload = () => {
+        // Дожидаемся загрузки аудио перед инициализацией игры
+        window.onload = async () => {
+            await preloadAudio();
             preloadImages(() => {
                 init();
             });
