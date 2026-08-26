@@ -4,15 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cat Suika Game</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="./assets/tailwind.js"></script>
+    <script src="./assets/matter.js"></script>
+    <!-- Yandex Games SDK -->
+    <script src="https://yandex.ru/games/sdk/v2"></script>
+    
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
             background-color: #FDFBF7;
-            background-image: url('./assets/bg.jpg'); /* Глобальный фон */
+            background-image: url('./assets/bg.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -27,7 +30,6 @@
             width: 100vw;
         }
 
-        /* Адаптация под вертикальные экраны (телефоны) */
         @media (orientation: portrait) {
             body {
                 background-image: url('./assets/bg-mobile.jpg');
@@ -57,32 +59,30 @@
         }
 
         .solid-panel {
-            background: rgba(255, 250, 240, 0.85); /* Полупрозрачный теплый картон */
-            border: 3px solid #C48A5E; /* Цвет крафтовой коробки */
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+            background: rgba(253, 251, 247, 0.95);
+            border: 3px solid #C48A5E; 
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
             border-radius: 20px;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            color: #5D4037; /* Темно-коричневый текст под маркер */
+            color: #5D4037; 
         }
 
         .score-box {
-            padding: 10px 15px;
-            font-size: 22px;
+            padding: 12px 18px;
+            font-size: 24px;
             font-weight: 800;
             transition: transform 0.1s;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         #score-val {
-            color: #D35400; /* Насыщенный карамельный/оранжевый */
+            color: #D35400; 
         }
 
-        .btn-restart-small {
-            width: 55px;
-            height: 55px;
+        .btn-settings {
+            width: 60px;
+            height: 60px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -93,19 +93,20 @@
             flex-shrink: 0;
         }
         
-        .btn-restart-small:active {
+        .btn-settings:active {
             transform: scale(0.9);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
-        .btn-restart-small:hover {
-            background: rgba(196, 138, 94, 0.15);
+        .btn-settings:hover {
+            background: rgba(211, 84, 0, 0.1);
         }
 
         .next-box-container {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 8px 12px;
+            padding: 8px 14px;
         }
 
         .next-label {
@@ -113,11 +114,12 @@
             font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            color: #5D4037;
         }
 
         .next-img-wrapper {
-            background: rgba(255, 255, 255, 0.6);
-            border: 2px dashed #C48A5E; /* Пунктирная граница в стиле штампа */
+            background: rgba(255, 255, 255, 0.7);
+            border: 2px dashed #C48A5E; 
             width: 65px;
             height: 65px;
             border-radius: 16px;
@@ -125,14 +127,13 @@
             justify-content: center;
             align-items: center;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
-            /* Убрано overflow: hidden, чтобы увеличенный котик красиво вылезал за края */
         }
         
         #next-item-img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transform: scale(1.75); /* Масштаб, утвержденный пользователем */
+            transform: scale(1.75); 
             pointer-events: none; 
         }
 
@@ -142,16 +143,20 @@
             height: 700px;
             box-sizing: content-box;
             
-            /* Стены из крафтового картона */
-            border: 22px solid #C48A5E;
+            border-left: 18px solid #8C6239;
+            border-right: 18px solid #8C6239;
+            border-bottom: 18px solid #8C6239;
             border-top: none;
+            border-radius: 0; 
             
-            /* Эффект прозрачного бликующего пластика (без размытия) */
-            background-color: rgba(255, 255, 255, 0.05);
-            
-            /* Внутренняя тень для объема выреза и легкая внешняя тень */
-            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4),
-                        0 15px 35px rgba(0, 0, 0, 0.15);
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5), 0 10px 20px rgba(0, 0, 0, 0.3); 
+        }
+
+        #canvas-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background-color: rgba(255, 255, 255, 0.08);
         }
 
         canvas {
@@ -161,49 +166,95 @@
             background-color: transparent;
         }
 
-        #game-over-screen {
+        .modal-overlay {
             display: none;
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(248, 238, 223, 0.85); /* Легкий оттенок бумаги */
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 20;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 30;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #5D4037;
-            border-radius: inherit;
-        }
-        
-        #game-over-screen h1 {
-            color: #D35400;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 0px #FFF;
         }
 
-        .btn-restart {
-            margin-top: 20px;
-            padding: 15px 35px;
-            font-size: 20px;
-            background-color: #C48A5E; /* Под цвет коробки */
-            color: #ffffff;
-            border: 3px solid #8C6239; /* Темные рамки */
-            border-radius: 30px;
+        .menu-content {
+            background: rgba(253, 251, 247, 0.95);
+            border: 4px solid #C48A5E;
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 85%;
+            max-width: 320px;
+        }
+
+        .menu-content h2 {
+            color: #D35400;
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .menu-btn {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-radius: 12px;
+            border: none;
             cursor: pointer;
             transition: all 0.1s;
-            font-weight: 800;
-            box-shadow: 0 6px 0 #8C6239, 0 10px 15px rgba(0,0,0,0.1); /* Объемная кнопка */
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            color: white;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
         }
-        
-        .btn-restart:active {
-            transform: translateY(4px); /* Кнопка вдавливается вниз */
-            box-shadow: 0 2px 0 #8C6239, 0 4px 5px rgba(0,0,0,0.1);
+
+        .menu-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-primary { background: #D35400; }
+        .btn-secondary { background: #C48A5E; }
+        .btn-accent { background: #4A3F35; }
+
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            width: 100%;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255,255,240,1);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            color: #5D4037;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 16px;
+        }
+
+        .leaderboard-item .rank-name {
+            display: flex;
+            gap: 8px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
 
         .merge-glow {
@@ -269,18 +320,18 @@
     <div id="app-wrapper">
         <div id="top-panel">
             <div class="solid-panel score-box" id="score-box">
-                Score: <span id="score-val">0</span>
+                <span id="i18n-score">Счет: </span> <span id="score-val">0</span>
             </div>
             
-            <button class="solid-panel btn-restart-small" onclick="location.reload()" title="Restart">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                    <path d="M3 3v5h5"></path>
+            <button class="solid-panel btn-settings" onclick="openSettings()" title="Settings">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
             </button>
             
             <div class="solid-panel next-box-container">
-                <div class="next-label">Next</div>
+                <div class="next-label" id="i18n-next">След.</div>
                 <div class="next-img-wrapper">
                     <img id="next-item-img" src="" alt="Next Cat">
                 </div>
@@ -288,37 +339,165 @@
         </div>
 
         <div id="game-container">
-            <div id="canvas-wrapper" style="width: 100%; height: 100%; position: relative;"></div>
+            <div id="canvas-wrapper"></div>
 
             <div id="warning-screen">
                 <div class="warning-text" id="warning-timer">3</div>
             </div>
 
-            <div id="game-over-screen">
-                <h1 class="text-4xl font-bold mb-4">Game Over!</h1>
-                <p class="text-xl mb-8">Final Score: <span id="final-score" class="font-bold">0</span></p>
-                <button class="btn-restart" onclick="location.reload()">Play Again</button>
+            <!-- Settings / Pause Menu -->
+            <div id="settings-modal" class="modal-overlay">
+                <div class="menu-content">
+                    <h2 id="i18n-pause-title">Пауза</h2>
+                    <button class="menu-btn btn-primary" id="i18n-continue" onclick="closeSettings(event)">Продолжить</button>
+                    <button class="menu-btn btn-secondary" id="btn-sound" onclick="toggleSound()">Звук: Вкл</button>
+                    <button class="menu-btn btn-secondary" id="i18n-restart" onclick="resetGame(event)">Начать заново</button>
+                    <button class="menu-btn btn-accent" id="i18n-leaderboard" onclick="showLeaderboard()">Таблица рекордов</button>
+                </div>
+            </div>
+            
+            <!-- Leaderboard Menu -->
+            <div id="leaderboard-modal" class="modal-overlay">
+                <div class="menu-content">
+                    <h2 id="i18n-leaderboard-title">Таблица рекордов</h2>
+                    <div id="leaderboard-list" class="leaderboard-list">
+                        <!-- Entries will be loaded here dynamically -->
+                    </div>
+                    <button class="menu-btn btn-primary" id="i18n-close-lb" onclick="closeLeaderboard()">Закрыть</button>
+                </div>
+            </div>
+
+            <!-- Game Over Menu -->
+            <div id="game-over-screen" class="modal-overlay">
+                <div class="menu-content">
+                    <h2 id="i18n-gameover-title">Игра окончена!</h2>
+                    <p style="font-size: 20px; margin-bottom: 10px; color: #5D4037;">
+                        <span id="i18n-final-score">Итоговый счет: </span> <span id="final-score" style="font-weight: bold; color: #D35400;">0</span>
+                    </p>
+                    <button class="menu-btn btn-primary" id="i18n-play-again" onclick="resetGame(event)">Играть еще</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        const translations = {
+            ru: {
+                score: "Счет: ",
+                next: "След.",
+                pause_title: "ПАУЗА",
+                continue: "ПРОДОЛЖИТЬ",
+                sound_on: "ЗВУК: ВКЛ",
+                sound_off: "ЗВУК: ВЫКЛ",
+                restart: "НАЧАТЬ ЗАНОВО",
+                leaderboard: "ТАБЛИЦА РЕКОРДОВ",
+                leaderboard_title: "РЕКОРДЫ",
+                gameover_title: "ИГРА ОКОНЧЕНА!",
+                final_score: "Итоговый счет: ",
+                play_again: "ИГРАТЬ ЕЩЕ",
+                loading: "Загрузка...",
+                anonymous: "Аноним",
+                close: "ЗАКРЫТЬ",
+                lb_empty: "Нет данных",
+                lb_error: "Ошибка загрузки данных"
+            },
+            en: {
+                score: "Score: ",
+                next: "Next",
+                pause_title: "PAUSE",
+                continue: "CONTINUE",
+                sound_on: "SOUND: ON",
+                sound_off: "SOUND: OFF",
+                restart: "RESTART",
+                leaderboard: "LEADERBOARD",
+                leaderboard_title: "TOP SCORES",
+                gameover_title: "GAME OVER!",
+                final_score: "Final Score: ",
+                play_again: "PLAY AGAIN",
+                loading: "Loading...",
+                anonymous: "Anonymous",
+                close: "CLOSE",
+                lb_empty: "No data",
+                lb_error: "Failed to load data"
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            
+            document.getElementById('i18n-score').innerText = t.score;
+            document.getElementById('i18n-next').innerText = t.next;
+            document.getElementById('i18n-pause-title').innerText = t.pause_title;
+            document.getElementById('i18n-continue').innerText = t.continue;
+            document.getElementById('i18n-restart').innerText = t.restart;
+            document.getElementById('i18n-leaderboard').innerText = t.leaderboard;
+            document.getElementById('i18n-leaderboard-title').innerText = t.leaderboard_title;
+            document.getElementById('i18n-gameover-title').innerText = t.gameover_title;
+            document.getElementById('i18n-final-score').innerText = t.final_score;
+            document.getElementById('i18n-play-again').innerText = t.play_again;
+            document.getElementById('i18n-close-lb').innerText = t.close;
+            
+            const soundBtn = document.getElementById('btn-sound');
+            soundBtn.innerText = isMuted ? t.sound_off : t.sound_on;
+        }
+
+        let ysdk = null;
+        let ysdkLeaderboard = null;
+
+        function initYandex() {
+            if (typeof YaGames !== 'undefined') {
+                YaGames.init().then(_ysdk => {
+                    ysdk = _ysdk;
+                    let envLang = ysdk.environment.i18n.lang;
+                    
+                    if (['ru', 'be', 'kk', 'uk', 'uz'].includes(envLang)) {
+                        setLanguage('ru');
+                    } else {
+                        setLanguage('en');
+                    }
+                    console.log('Yandex SDK Init success. Lang:', currentLang);
+
+                    // Initialize Leaderboard API
+                    ysdk.getLeaderboards()
+                        .then(_lb => {
+                            ysdkLeaderboard = _lb;
+                            console.log("Leaderboard SDK initialized");
+                        })
+                        .catch(err => {
+                            console.error("Leaderboard SDK init error:", err);
+                        });
+                        
+                }).catch(err => {
+                    console.error('Yandex SDK Init failed:', err);
+                    setLanguage('ru');
+                });
+            } else {
+                setLanguage('ru'); 
+            }
+        }
+
         const GAME_WIDTH = 320; 
         const GAME_HEIGHT = 700; 
         
         const CAT_LEVELS = [
-            { level: 0, imgSrc: 'assets/cat1.png', radius: 22, color: '#FFC0CB', points: 1, img: null, renderScale: 1.22 },
-            { level: 1, imgSrc: 'assets/cat2.png', radius: 26, color: '#FFD700', points: 3, img: null, renderScale: 1.22 },
-            { level: 2, imgSrc: 'assets/cat3.png', radius: 30, color: '#FFA07A', points: 6, img: null, renderScale: 1.22 },
-            { level: 3, imgSrc: 'assets/cat4.png', radius: 36, color: '#98FB98', points: 10, img: null, renderScale: 1.22 },
-            { level: 4, imgSrc: 'assets/cat5.png', radius: 43, color: '#20B2AA', points: 15, img: null, renderScale: 1.25 },
-            { level: 5, imgSrc: 'assets/cat6.png', radius: 51, color: '#87CEFA', points: 21, img: null, renderScale: 1.15 }, 
-            { level: 6, imgSrc: 'assets/cat7.png', radius: 60, color: '#9370DB', points: 28, img: null, renderScale: 1.05 }, 
-            { level: 7, imgSrc: 'assets/cat8.png', radius: 70, color: '#DDA0DD', points: 36, img: null, renderScale: 1.05 }, 
-            { level: 8, imgSrc: 'assets/cat9.png?v=new3', radius: 82, color: '#F08080', points: 45, img: null, renderScale: 1.16 }, 
-            { level: 9, imgSrc: 'assets/cat10.png', radius: 90, color: '#FF69B4', points: 55, img: null, renderScale: 1.17 }, 
-            { level: 10, imgSrc: 'assets/cat11.png', radius: 100, color: '#FF4500', points: 66, img: null, renderScale: 1.04 } 
+            { level: 0, imgSrc: './assets/cat1.png', radius: 22, color: '#FFC0CB', points: 0, img: null, renderScale: 1.22 },
+            { level: 1, imgSrc: './assets/cat2.png', radius: 26, color: '#FFD700', points: 10, img: null, renderScale: 1.22 },
+            { level: 2, imgSrc: './assets/cat3.png', radius: 30, color: '#FFA07A', points: 30, img: null, renderScale: 1.22 },
+            { level: 3, imgSrc: './assets/cat4.png', radius: 36, color: '#98FB98', points: 60, img: null, renderScale: 1.22 },
+            { level: 4, imgSrc: './assets/cat5.png', radius: 43, color: '#20B2AA', points: 100, img: null, renderScale: 1.25 },
+            { level: 5, imgSrc: './assets/cat6.png', radius: 51, color: '#87CEFA', points: 150, img: null, renderScale: 1.15 }, 
+            { level: 6, imgSrc: './assets/cat7.png', radius: 60, color: '#9370DB', points: 210, img: null, renderScale: 1.05 }, 
+            { level: 7, imgSrc: './assets/cat8.png', radius: 70, color: '#DDA0DD', points: 280, img: null, renderScale: 1.05 }, 
+            { level: 8, imgSrc: './assets/cat9.png', radius: 82, color: '#F08080', points: 360, img: null, renderScale: 1.16 }, 
+            { level: 9, imgSrc: './assets/cat10.png', radius: 90, color: '#FF69B4', points: 450, img: null, renderScale: 1.17 }, 
+            { level: 10, imgSrc: './assets/cat11.png', radius: 100, color: '#FF4500', points: 550, img: null, renderScale: 1.04 } 
         ];
+
+        // Массив с прогрессивными наградами за создание котика определенного уровня
+        const mergeScores = [0, 0, 10, 30, 60, 100, 150, 210, 280, 360, 450, 550];
 
         const Engine = Matter.Engine,
               Render = Matter.Render,
@@ -333,14 +512,23 @@
         
         let currentScore = 0;
         let isGameOver = false;
+        let isPaused = false;
         let nextCatLevel = 0;
         let activeDropper = null;
         let canDrop = true;
         let dropCooldown = 800; 
         
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
+        const spawnY = 80; 
+        const gameOverLineY = 210; 
+        
+        let warningStartTime = 0;
+        let isWarningActive = false;
+        let lastInputX = GAME_WIDTH / 2;
+        let mergeAnimations = [];
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffers = {};
+        let isMuted = false;
         
         const audioPaths = {
             drop: './assets/drop.mp3',
@@ -349,12 +537,11 @@
             victory: './assets/victory.mp3'
         };
 
-        // Асинхронная предзагрузка всех аудиофайлов в память
         async function preloadAudio() {
             for (const [name, path] of Object.entries(audioPaths)) {
                 try {
                     const response = await fetch(path);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    if (!response.ok) throw new Error(`HTTP status: ${response.status}`);
                     
                     const arrayBuffer = await response.arrayBuffer();
                     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
@@ -365,28 +552,22 @@
             }
         }
 
-        // Разблокировка Autoplay политики браузера при первом тапе/клике
         function unlockAudio() {
             if (audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume().then(() => {
                     console.log("[Audio] Контекст успешно разблокирован!");
                 }).catch(err => {
-                    console.error("[Audio] Ошибка при попытке разблокировать контекст:", err);
+                    console.error("[Audio] Ошибка разблокировки:", err);
                 });
             }
-            // Снимаем слушатели после успешной попытки
-            document.removeEventListener('pointerdown', unlockAudio);
-            document.removeEventListener('touchstart', unlockAudio);
-            document.removeEventListener('mousedown', unlockAudio);
         }
 
         document.addEventListener('pointerdown', unlockAudio, { passive: true });
         document.addEventListener('touchstart', unlockAudio, { passive: true });
         document.addEventListener('mousedown', unlockAudio, { passive: true });
 
-        // Мгновенное воспроизведение без задержек
         function playSound(name, volumeMultiplier = 1.0) {
-            if (!audioCtx || !audioBuffers[name]) return;
+            if (isMuted || !audioCtx || !audioBuffers[name]) return;
             
             try {
                 const source = audioCtx.createBufferSource();
@@ -397,19 +578,12 @@
                 
                 source.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
+                
                 source.start(0);
             } catch (err) {
                 console.error(`[Audio Play Error] Ошибка при проигрывании ${name}:`, err);
             }
         }
-
-        const spawnY = 80; 
-        const gameOverLineY = 210; 
-        
-        let warningStartTime = 0;
-        let isWarningActive = false;
-        let lastInputX = GAME_WIDTH / 2;
-        let mergeAnimations = [];
 
         function preloadImages(callback) {
             let loadedCount = 0;
@@ -445,8 +619,7 @@
             engine = Engine.create();
             engine.world.gravity.y = 1.0; 
             
-            // Улучшение стабильности физики (Solver Iterations)
-            engine.positionIterations = 10; 
+            engine.positionIterations = 6; 
             engine.velocityIterations = 8;
             engine.constraintIterations = 6;
 
@@ -456,32 +629,66 @@
                 options: {
                     width: GAME_WIDTH,
                     height: GAME_HEIGHT,
-                    wireframes: false, 
+                    wireframes: false, // Оставляем false, чтобы работала заливка цветом
                     background: 'transparent',
                     pixelRatio: window.devicePixelRatio
                 }
             });
 
-            const wallThickness = 200; 
+            // Настройки толщины стен и смещения (offsets) для точной подгонки
+            const wallThickness = 60;
+            const floorThickness = 60;
             
-            // Абсолютно плоское горизонтальное дно
-            const floor = Bodies.rectangle(GAME_WIDTH / 2, GAME_HEIGHT + wallThickness / 2, GAME_WIDTH + wallThickness * 2, wallThickness, {
-                isStatic: true,
-                render: { visible: false }, 
-                friction: 1.0,       // Максимальное трение для пола
-                frictionStatic: 1.0, // Чтобы коты крепко держались и не скользили
-                restitution: 0 
-            });
+            // Меняй эти значения (в пикселях), чтобы подвигать границы, если они не совпадают с CSS-рамками
+            const offsetLeftX = 0;   // Отрицательное - левее, положительное - правее
+            const offsetRightX = 0;  
+            const offsetFloorY = 0;  // Отрицательное - выше, положительное - ниже
 
-            // Прямоугольные вертикальные стены
-            const leftWall = Bodies.rectangle(-wallThickness / 2, GAME_HEIGHT / 2, wallThickness, GAME_HEIGHT * 2, { 
-                isStatic: true, render: { visible: false }, friction: 1.0, frictionStatic: 1.0, restitution: 0 
-            });
-            const rightWall = Bodies.rectangle(GAME_WIDTH + wallThickness / 2, GAME_HEIGHT / 2, wallThickness, GAME_HEIGHT * 2, { 
-                isStatic: true, render: { visible: false }, friction: 1.0, frictionStatic: 1.0, restitution: 0 
-            });
+            // Координаты в Matter.js задаются по ЦЕНТРУ тел. 
+            // Поэтому сдвигаем стены за пределы экрана ровно на половину их толщины.
+            const floor = Bodies.rectangle(
+                GAME_WIDTH / 2, 
+                GAME_HEIGHT + (floorThickness / 2) + offsetFloorY, 
+                GAME_WIDTH * 2, // Ширина с запасом
+                floorThickness, 
+                {
+                    isStatic: true,
+                    // Временно делаем пол видимым красным блоком для дебага
+                    render: { visible: true, fillStyle: 'rgba(255, 0, 0, 0.4)' }, 
+                    friction: 1.0,       
+                    frictionStatic: 1.0, 
+                    restitution: 0 
+                }
+            );
 
-            // Добавляем ровно 3 прямоугольных элемента
+            const leftWall = Bodies.rectangle(
+                0 - (wallThickness / 2) + offsetLeftX, 
+                GAME_HEIGHT / 2, 
+                wallThickness, 
+                GAME_HEIGHT * 2, 
+                { 
+                    isStatic: true, 
+                    // Временно делаем стену видимой для дебага
+                    render: { visible: true, fillStyle: 'rgba(255, 0, 0, 0.4)' }, 
+                    friction: 0.5, 
+                    restitution: 0 
+                }
+            );
+            
+            const rightWall = Bodies.rectangle(
+                GAME_WIDTH + (wallThickness / 2) + offsetRightX, 
+                GAME_HEIGHT / 2, 
+                wallThickness, 
+                GAME_HEIGHT * 2, 
+                { 
+                    isStatic: true, 
+                    // Временно делаем стену видимой для дебага
+                    render: { visible: true, fillStyle: 'rgba(255, 0, 0, 0.4)' }, 
+                    friction: 0.5, 
+                    restitution: 0 
+                }
+            );
+
             Composite.add(engine.world, [leftWall, rightWall, floor]);
 
             Events.on(render, 'afterRender', customRender);
@@ -525,7 +732,9 @@
             };
 
             const handleMove = (e) => {
-                if (isGameOver) return;
+                if (isGameOver || isPaused) return;
+                
+                if (e.target && e.target.closest && (e.target.closest('#top-panel') || e.target.closest('.modal-overlay'))) return;
                 
                 let xPos = getXPos(e);
                 let currentRadius = activeDropper ? CAT_LEVELS[activeDropper.label].radius : CAT_LEVELS[nextCatLevel].radius;
@@ -538,7 +747,9 @@
             };
 
             const handleDrop = (e) => {
-                if (isGameOver || !activeDropper || !canDrop) return;
+                if (isGameOver || isPaused || !activeDropper || !canDrop) return;
+                
+                if (e.target && e.target.closest && (e.target.closest('#top-panel') || e.target.closest('.modal-overlay'))) return;
                 
                 if (e.type !== 'touchend') {
                     handleMove(e);
@@ -548,13 +759,13 @@
                 Matter.Body.setStatic(activeDropper, false);
                 activeDropper.isSensor = false;
                 
-                playSound('drop', 1.0); 
+                playSound('drop', 2.0); 
                 
                 activeDropper.createdAt = Date.now();
                 activeDropper = null;
                 
                 setTimeout(() => {
-                    if (!isGameOver) {
+                    if (!isGameOver && !isPaused) {
                         spawnDropper();
                         canDrop = true;
                     }
@@ -597,10 +808,10 @@
                 isSensor: isStatic, 
                 label: levelIndex.toString(),
                 restitution: 0.1, 
-                friction: 0.8,         // Повышенное трение, чтобы не скользили
-                frictionStatic: 1.0,   // Статическое трение
-                linearDamping: 0.1,    // Гашение инерции движения
-                angularDamping: 0.2,   // Гашение бесконечного вращения
+                friction: 0.8,         
+                frictionStatic: 1.0,   
+                linearDamping: 0.1,    
+                angularDamping: 0.2,   
                 slop: 0.05,          
                 render: { visible: false }
             });
@@ -629,24 +840,39 @@
                         
                         if (bodiesToRemove.includes(bodyA) || bodiesToRemove.includes(bodyB)) continue;
 
+                        const midX = (bodyA.position.x + bodyB.position.x) / 2;
+                        const midY = (bodyA.position.y + bodyB.position.y) / 2;
+
+                        bodiesToRemove.push(bodyA, bodyB);
+
                         if (level < CAT_LEVELS.length - 1) {
                             const newLevel = level + 1;
-                            const midX = (bodyA.position.x + bodyB.position.x) / 2;
-                            const midY = (bodyA.position.y + bodyB.position.y) / 2;
-
-                            bodiesToRemove.push(bodyA, bodyB);
                             
-                            // Звук победы для максимального уровня
+                            const gainedPoints = mergeScores[newLevel] || 0;
+                            
                             if (newLevel === CAT_LEVELS.length - 1) {
-                                playSound('victory', 1.0); 
+                                playSound('victory'); 
                             } else {
-                                playSound('merge', 1.0); 
+                                playSound('merge'); 
                             }
                             
                             mergeAnimations.push({
                                 level: level,
                                 newLevel: newLevel,
-                                points: CAT_LEVELS[newLevel].points,
+                                points: gainedPoints,
+                                x1: bodyA.position.x, y1: bodyA.position.y, angle1: bodyA.angle,
+                                x2: bodyB.position.x, y2: bodyB.position.y, angle2: bodyB.angle,
+                                midX: midX, midY: midY,
+                                startTime: Date.now(),
+                                duration: 150 
+                            });
+                        } else {
+                            // Секретное слияние двух максимальных котов (уровень 11)
+                            playSound('victory');
+                            mergeAnimations.push({
+                                level: level,
+                                newLevel: null,
+                                points: 1000, // Бонус 1000 очков
                                 x1: bodyA.position.x, y1: bodyA.position.y, angle1: bodyA.angle,
                                 x2: bodyB.position.x, y2: bodyB.position.y, angle2: bodyB.angle,
                                 midX: midX, midY: midY,
@@ -685,11 +911,14 @@
                 for (let i = mergeAnimations.length - 1; i >= 0; i--) {
                     const anim = mergeAnimations[i];
                     if (now - anim.startTime >= anim.duration) {
-                        const newCat = createCatBody(anim.midX, anim.midY, anim.newLevel);
-                        newCat.isMergeResult = true; 
-                        newCat.createdAt = now;
                         
-                        Composite.add(engine.world, newCat);
+                        if (anim.newLevel !== null) {
+                            const newCat = createCatBody(anim.midX, anim.midY, anim.newLevel);
+                            newCat.isMergeResult = true; 
+                            newCat.createdAt = now;
+                            Composite.add(engine.world, newCat);
+                        }
+                        
                         updateScore(anim.points);
                         createMergeExplosion(anim.midX, anim.midY);
                         
@@ -745,17 +974,18 @@
             document.getElementById('warning-screen').style.display = 'none';
             Matter.Runner.stop(runner);
             
-            playSound('gameover', 1.0); 
+            playSound('gameover'); 
             
             document.getElementById('final-score').innerText = currentScore;
             document.getElementById('game-over-screen').style.display = 'flex';
+            
+            // Если нужно, здесь можно добавить вызов SDK для сохранения очков игрока
         }
 
         function customRender() {
             const ctx = render.context;
             const now = Date.now();
             
-            // Отрисовка линии проигрыша в виде маркера
             ctx.beginPath();
             ctx.moveTo(0, gameOverLineY);
             ctx.lineTo(GAME_WIDTH, gameOverLineY);
@@ -881,8 +1111,113 @@
             }, 400); 
         }
 
-        // Дожидаемся загрузки аудио перед инициализацией игры
+        function openSettings(event) {
+            if (event) event.stopPropagation(); // Блокируем фантомные клики
+            if (isGameOver) return;
+
+            if (isPaused) {
+                // Если игра уже на паузе (открыты настройки или рекорды), закрываем их
+                document.getElementById('leaderboard-modal').style.display = 'none';
+                closeSettings(event);
+            } else {
+                // Иначе открываем меню
+                isPaused = true;
+                if (runner) runner.enabled = false; 
+                document.getElementById('settings-modal').style.display = 'flex';
+            }
+        }
+
+        function closeSettings(e) {
+            if (e) e.stopPropagation();
+            document.getElementById('settings-modal').style.display = 'none';
+            if (runner) runner.enabled = true; 
+            
+            setTimeout(() => {
+                isPaused = false;
+                if (!activeDropper && canDrop) {
+                    spawnDropper();
+                }
+            }, 50); 
+        }
+
+        function toggleSound() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('btn-sound');
+            const t = translations[currentLang];
+            btn.innerText = isMuted ? t.sound_off : t.sound_on;
+        }
+
+        function resetGame(e) {
+            if (e) e.stopPropagation();
+            
+            isGameOver = false;
+            if (runner) runner.enabled = true;
+            
+            document.getElementById('settings-modal').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'none';
+            document.getElementById('warning-screen').style.display = 'none';
+            
+            currentScore = 0;
+            document.getElementById('score-val').innerText = currentScore;
+            
+            const bodies = Composite.allBodies(engine.world);
+            const catBodies = bodies.filter(b => !isNaN(parseInt(b.label)));
+            Composite.remove(engine.world, catBodies);
+            
+            activeDropper = null;
+            mergeAnimations = [];
+            
+            setTimeout(() => {
+                isPaused = false;
+                isWarningActive = false;
+                canDrop = true;
+                rollNextCat();
+                spawnDropper();
+            }, 50);
+        }
+
+        function showLeaderboard() {
+            document.getElementById('settings-modal').style.display = 'none';
+            document.getElementById('leaderboard-modal').style.display = 'flex';
+            
+            const listContainer = document.getElementById('leaderboard-list');
+            const t = translations[currentLang];
+            
+            listContainer.innerHTML = `<div style="text-align:center; padding: 20px; font-weight: bold; color: #5D4037;">${t.loading}</div>`;
+
+            if (ysdkLeaderboard) {
+                ysdkLeaderboard.getLeaderboardEntries('top_scores', { quantityTop: 10 })
+                    .then(res => {
+                        let html = '';
+                        if (res.entries.length === 0) {
+                            html = `<div style="text-align:center; padding: 20px; color: #5D4037;">${t.lb_empty}</div>`;
+                        } else {
+                            res.entries.forEach(entry => {
+                                let name = entry.player.publicName || t.anonymous;
+                                html += `<div class="leaderboard-item">
+                                    <span class="rank-name">${entry.rank}. ${name}</span>
+                                    <span>${entry.score}</span>
+                                </div>`;
+                            });
+                        }
+                        listContainer.innerHTML = html;
+                    })
+                    .catch(err => {
+                        console.error("Ошибка загрузки лидерборда:", err);
+                        listContainer.innerHTML = `<div style="text-align:center; padding: 20px; color: #D35400;">${t.lb_error}</div>`;
+                    });
+            } else {
+                listContainer.innerHTML = `<div style="text-align:center; padding: 20px; color: #5D4037;">SDK не инициализирован</div>`;
+            }
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('leaderboard-modal').style.display = 'none';
+            document.getElementById('settings-modal').style.display = 'flex'; // Возвращаемся в меню паузы
+        }
+
         window.onload = async () => {
+            initYandex(); 
             await preloadAudio();
             preloadImages(() => {
                 init();
