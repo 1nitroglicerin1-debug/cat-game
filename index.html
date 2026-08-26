@@ -12,7 +12,7 @@
             padding: 0;
             overflow: hidden;
             background-color: #FDFBF7;
-            background-image: url('assets/bg.jpg'); /* Глобальный фон */
+            background-image: url('./assets/bg.jpg'); /* Глобальный фон */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -27,9 +27,10 @@
             width: 100vw;
         }
 
+        /* Адаптация под вертикальные экраны (телефоны) */
         @media (orientation: portrait) {
             body {
-                background-image: url('assets/bg-mobile.jpg');
+                background-image: url('./assets/bg-mobile.jpg');
             }
         }
 
@@ -124,15 +125,15 @@
             justify-content: center;
             align-items: center;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
-            /* Убрали overflow: hidden, чтобы увеличенный котик не обрезался */
+            /* Убрано overflow: hidden, чтобы увеличенный котик красиво вылезал за края */
         }
         
         #next-item-img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transform: scale(1.75); /* Увеличили еще в 1.5 раза, чтобы точно вылезал */
-            pointer-events: none; /* Чтобы картинка не перекрывала случайные клики, если сильно вылезет */
+            transform: scale(1.75); /* Масштаб, утвержденный пользователем */
+            pointer-events: none; 
         }
 
         #game-container {
@@ -343,7 +344,6 @@
         let canDrop = true;
         let dropCooldown = 800; 
         
-        // --- Audio System ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
         const audioBuffers = {};
@@ -355,11 +355,8 @@
             victory: './assets/victory.mp3'
         };
 
-        // Асинхронная предзагрузка всех аудиофайлов в память (AudioBuffer)
+        // Асинхронная предзагрузка всех аудиофайлов в память
         async function preloadAudio() {
-            // Создаем тихий буфер-заглушку на случай фатальной ошибки
-            const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
-
             for (const [name, path] of Object.entries(audioPaths)) {
                 try {
                     const response = await fetch(path);
@@ -368,10 +365,8 @@
                     const arrayBuffer = await response.arrayBuffer();
                     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                     audioBuffers[name] = audioBuffer;
-                    console.log(`[Audio] Успешно загружен: ${name}`);
                 } catch (error) {
                     console.error(`[Audio Error] Ошибка загрузки звука ${name} по пути ${path}:`, error);
-                    audioBuffers[name] = silentBuffer;
                 }
             }
         }
@@ -391,7 +386,6 @@
             document.removeEventListener('mousedown', unlockAudio);
         }
 
-        // Вешаем слушатели ГЛОБАЛЬНО и СРАЗУ, чтобы не пропустить первый клик во время предзагрузки
         document.addEventListener('pointerdown', unlockAudio, { passive: true });
         document.addEventListener('touchstart', unlockAudio, { passive: true });
         document.addEventListener('mousedown', unlockAudio, { passive: true });
@@ -401,34 +395,26 @@
             if (!audioCtx || !audioBuffers[name]) return;
             
             try {
-                // Создаем новый источник звука для каждого воспроизведения
                 const source = audioCtx.createBufferSource();
                 source.buffer = audioBuffers[name];
                 
-                // Создаем узел управления громкостью (GainNode)
                 const gainNode = audioCtx.createGain();
                 gainNode.gain.value = volumeMultiplier;
                 
-                // Соединяем: Источник -> Громкость -> Динамики (destination)
                 source.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
-                
-                // Мгновенный запуск
                 source.start(0);
             } catch (err) {
                 console.error(`[Audio Play Error] Ошибка при проигрывании ${name}:`, err);
             }
         }
-        // --------------------
 
         const spawnY = 80; 
         const gameOverLineY = 210; 
         
         let warningStartTime = 0;
         let isWarningActive = false;
-        
         let lastInputX = GAME_WIDTH / 2;
-
         let mergeAnimations = [];
 
         function preloadImages(callback) {
@@ -465,8 +451,10 @@
             engine = Engine.create();
             engine.world.gravity.y = 1.0; 
             
-            engine.positionIterations = 8; 
-            engine.velocityIterations = 6;  
+            // Улучшение стабильности физики (Solver Iterations)
+            engine.positionIterations = 10; 
+            engine.velocityIterations = 8;
+            engine.constraintIterations = 6;
 
             render = Render.create({
                 element: document.getElementById('canvas-wrapper'),
@@ -498,7 +486,8 @@
                     isStatic: true,
                     angle: angle + Math.PI / 2,
                     render: { visible: false }, 
-                    friction: 0.1,
+                    friction: 1.0,       // Максимальное трение для пола
+                    frictionStatic: 1.0, // Чтобы коты крепко держались
                     restitution: 0 
                 });
                 bowlParts.push(part);
@@ -506,10 +495,10 @@
 
             const wallThickness = 200; 
             const leftWall = Bodies.rectangle(-wallThickness/2, bowlCenterY / 2, wallThickness, GAME_HEIGHT * 2, { 
-                isStatic: true, render: { visible: false }, friction: 0.1, restitution: 0 
+                isStatic: true, render: { visible: false }, friction: 1.0, frictionStatic: 1.0, restitution: 0 
             });
             const rightWall = Bodies.rectangle(GAME_WIDTH + wallThickness/2, bowlCenterY / 2, wallThickness, GAME_HEIGHT * 2, { 
-                isStatic: true, render: { visible: false }, friction: 0.1, restitution: 0 
+                isStatic: true, render: { visible: false }, friction: 1.0, frictionStatic: 1.0, restitution: 0 
             });
 
             Composite.add(engine.world, [leftWall, rightWall, ...bowlParts]);
@@ -575,12 +564,10 @@
                 }
                 
                 canDrop = false;
-                
                 Matter.Body.setStatic(activeDropper, false);
                 activeDropper.isSensor = false;
                 
-                // Проигрываем звук сброса с увеличенным в 2 раза множителем громкости
-                playSound('drop', 2.0); 
+                playSound('drop', 1.0); 
                 
                 activeDropper.createdAt = Date.now();
                 activeDropper = null;
@@ -629,7 +616,10 @@
                 isSensor: isStatic, 
                 label: levelIndex.toString(),
                 restitution: 0.1, 
-                friction: 0.1,    
+                friction: 0.8,         // Повышенное трение, чтобы не скользили
+                frictionStatic: 1.0,   // Статическое трение
+                linearDamping: 0.1,    // Гашение инерции движения
+                angularDamping: 0.2,   // Гашение бесконечного вращения
                 slop: 0.05,          
                 render: { visible: false }
             });
@@ -665,11 +655,11 @@
 
                             bodiesToRemove.push(bodyA, bodyB);
                             
-                            // Проверяем, получился ли котик максимального уровня
+                            // Звук победы для максимального уровня
                             if (newLevel === CAT_LEVELS.length - 1) {
-                                playSound('victory'); // Звук победы!
+                                playSound('victory', 1.0); 
                             } else {
-                                playSound('merge'); // Обычный звук слияния
+                                playSound('merge', 1.0); 
                             }
                             
                             mergeAnimations.push({
@@ -774,7 +764,7 @@
             document.getElementById('warning-screen').style.display = 'none';
             Matter.Runner.stop(runner);
             
-            playSound('gameover'); // Проигрываем звук проигрыша
+            playSound('gameover', 1.0); 
             
             document.getElementById('final-score').innerText = currentScore;
             document.getElementById('game-over-screen').style.display = 'flex';
@@ -784,16 +774,17 @@
             const ctx = render.context;
             const now = Date.now();
             
+            // Отрисовка линии проигрыша в виде маркера
             ctx.beginPath();
             ctx.moveTo(0, gameOverLineY);
             ctx.lineTo(GAME_WIDTH, gameOverLineY);
-            ctx.strokeStyle = '#3E2723'; /* Темно-коричневый цвет маркера */
-            ctx.lineWidth = 4; /* Чуть толще */
-            ctx.lineCap = 'round'; /* Слегка сглаженные края штрихов */
-            ctx.setLineDash([15, 12]); /* Более длинные штрихи */
+            ctx.strokeStyle = '#3E2723'; 
+            ctx.lineWidth = 4; 
+            ctx.lineCap = 'round'; 
+            ctx.setLineDash([15, 12]); 
             ctx.stroke();
             ctx.setLineDash([]); 
-            ctx.lineCap = 'butt'; /* Сброс свойства */
+            ctx.lineCap = 'butt'; 
 
             const bodies = Composite.allBodies(engine.world);
             for (let body of bodies) {
