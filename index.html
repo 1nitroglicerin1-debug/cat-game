@@ -599,7 +599,8 @@
               Runner = Matter.Runner,
               Bodies = Matter.Bodies,
               Composite = Matter.Composite,
-              Events = Matter.Events;
+              Events = Matter.Events,
+              World = Matter.World; // Добавляем World для глубокой очистки
 
         let engine;
         let render;
@@ -613,6 +614,8 @@
         let canDrop = true;
         let isSpawnDelayed = false; 
         let dropCooldown = 800; 
+        let dropTimeoutId = null; // Флаг для контроля асинхронных таймеров
+        let isInputSetup = false; // Блокировка от двойного назначения событий
         
         const spawnY = 80; 
         const gameOverLineY = 210; 
@@ -710,8 +713,24 @@
         }
 
         function init() {
+            setupPhysicsWorld(); // Выделяем физику в отдельную функцию
+
+            resizeApp();
+            window.addEventListener('resize', resizeApp);
+
+            // Назначаем события управления только ОДИН раз за сессию
+            if (!isInputSetup) {
+                setupInput();
+                isInputSetup = true;
+            }
+
+            rollNextCat();
+            spawnDropper(); 
+        }
+
+        function setupPhysicsWorld() {
             engine = Engine.create();
-            engine.world.gravity.y = 1.8; // Увеличенная скорость падения
+            engine.world.gravity.y = 1.8; 
             
             engine.positionIterations = 12; 
             engine.velocityIterations = 10;
@@ -780,15 +799,8 @@
             runner = Runner.create();
             Runner.run(runner, engine);
 
-            resizeApp();
-            window.addEventListener('resize', resizeApp);
-
-            setupInput();
             setupCollisions();
             setupGameLoop(); 
-
-            rollNextCat();
-            spawnDropper(); 
         }
 
         function setupInput() {
@@ -846,15 +858,14 @@
                 Matter.Body.setStatic(activeDropper, false);
                 activeDropper.isSensor = false;
                 
-                // Снимаем принудительный нулевой угол, чтобы кот мог вращаться при столкновениях
-                // Устанавливать случайный угол здесь не нужно, кот падает ровно.
-                
                 playSound('drop', 2.0); 
                 
                 activeDropper.createdAt = Date.now();
                 activeDropper = null;
                 
-                setTimeout(() => {
+                // Сбрасываем старый таймер и создаем новый для появления следующего кота
+                if (dropTimeoutId) clearTimeout(dropTimeoutId);
+                dropTimeoutId = setTimeout(() => {
                     if (isGameOver) return;
                     
                     if (isPaused) {
@@ -1381,7 +1392,6 @@
             
             isGameOver = false;
             hasRevivedThisGame = false;
-            if (runner) runner.enabled = true;
             
             document.getElementById('settings-modal').style.display = 'none';
             document.getElementById('game-over-screen').style.display = 'none';
@@ -1391,21 +1401,41 @@
             comboCount = 0;
             document.getElementById('score-val').innerText = currentScore;
             
-            const bodies = Composite.allBodies(engine.world);
-            const catBodies = bodies.filter(b => !isNaN(parseInt(b.label)));
-            Composite.remove(engine.world, catBodies);
+            // 1. Очищаем таймер сброса, чтобы не появилось фантомных объектов
+            if (dropTimeoutId) {
+                clearTimeout(dropTimeoutId);
+                dropTimeoutId = null;
+            }
+
+            // 2. Явная и полная остановка движков
+            if (runner) Runner.stop(runner);
+            if (render) {
+                Render.stop(render);
+                if (render.canvas && render.canvas.parentNode) {
+                    render.canvas.parentNode.removeChild(render.canvas);
+                }
+                render.canvas = null;
+                render.context = null;
+                render.textures = {}; // Уничтожение кэша текстур
+            }
+            if (engine) {
+                World.clear(engine.world, false);
+                Engine.clear(engine);
+            }
             
+            // 3. Очистка игровых массивов и состояний
             activeDropper = null;
             mergeAnimations = [];
+            isPaused = false;
+            isWarningActive = false;
+            canDrop = true;
+            isSpawnDelayed = false; 
             
-            setTimeout(() => {
-                isPaused = false;
-                isWarningActive = false;
-                canDrop = true;
-                isSpawnDelayed = false; 
-                rollNextCat();
-                spawnDropper();
-            }, 50);
+            // 4. Пересоздаем мир с чистого листа
+            setupPhysicsWorld();
+
+            rollNextCat();
+            spawnDropper();
         }
 
         function showLeaderboard() {
