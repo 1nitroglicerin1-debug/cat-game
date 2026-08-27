@@ -682,7 +682,7 @@
 
         function init() {
             engine = Engine.create();
-            engine.world.gravity.y = 1.0; 
+            engine.world.gravity.y = 1.8; 
             
             engine.positionIterations = 12; 
             engine.velocityIterations = 10;
@@ -878,8 +878,7 @@
                 restitution: 0.1,      
                 friction: 0.3,         
                 frictionStatic: 1.0,   
-                linearDamping: 0.1,    
-                angularDamping: 0.2,   
+                frictionAir: 0.005,    
                 slop: 0.05,          
                 render: { visible: false }
             });
