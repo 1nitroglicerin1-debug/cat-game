@@ -638,7 +638,7 @@
         let activeDropper = null;
         let canDrop = true;
         let isSpawnDelayed = false; 
-        let dropCooldown = 600; // Оптимизировано для динамики (было 800ms)
+        let dropCooldown = 600; // Оптимизировано для динамики
         let dropTimeoutId = null; // Флаг для контроля асинхронных таймеров
         let isInputSetup = false; // Блокировка от двойного назначения событий
         
@@ -965,6 +965,9 @@
                     const bodyA = pairs[i].bodyA;
                     const bodyB = pairs[i].bodyB;
 
+                    if (!bodyA.isStatic) bodyA.hasCollided = true;
+                    if (!bodyB.isStatic) bodyB.hasCollided = true;
+
                     if (bodyA.isStatic || bodyB.isStatic) continue;
                     
                     if (bodyA.label === bodyB.label && !isNaN(parseInt(bodyA.label))) {
@@ -1203,8 +1206,53 @@
         function customRender() {
             const ctx = render.context;
             const now = Date.now();
+
+            // Получаем тела один раз для всей функции рендера
+            const bodies = Composite.allBodies(engine.world);
+
+            // 1. Динамическая линия окончания игры (белая, появляется только при приближении котиков)
+            let highestCatTopY = GAME_HEIGHT;
+
+            for (let i = 0; i < bodies.length; i++) {
+                const b = bodies[i];
+                if (b.isStatic || b === activeDropper || isNaN(parseInt(b.label))) continue;
+
+                // Игнорируем котиков, которые только сброшены и ещё летят вниз
+                if (!b.hasCollided || (now - (b.createdAt || 0) < 1200 && b.speed > 1.0)) continue;
+
+                const r = CAT_LEVELS[parseInt(b.label)].radius;
+                const topY = b.position.y - r;
+                if (topY < highestCatTopY) {
+                    highestCatTopY = topY;
+                }
+            }
+
+            // Дистанция предупреждения ~140px (высота примерно 2-3 котиков)
+            const dangerZoneHeight = 140;
+            const distToLine = highestCatTopY - gameOverLineY;
+
+            if (distToLine < dangerZoneHeight) {
+                const lineOpacity = Math.max(0, Math.min(1, 1 - (distToLine / dangerZoneHeight)));
+                
+                if (lineOpacity > 0.03) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(0, gameOverLineY);
+                    ctx.lineTo(GAME_WIDTH, gameOverLineY);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${lineOpacity.toFixed(2)})`;
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    ctx.setLineDash([12, 10]);
+                    if (lineOpacity > 0.5) {
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = `rgba(255, 255, 255, ${(lineOpacity * 0.7).toFixed(2)})`;
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
             
-            // Направляющая линия и проекция габаритов котика в месте падения
+            // 2. Направляющая линия и контур шарика (рисуются ПОСЛЕ линии окончания, доминируя над ней)
             if (activeDropper && canDrop && !isGameOver && !isPaused) {
                 const data = CAT_LEVELS[activeDropper.label];
                 const catRadius = data.radius;
@@ -1213,7 +1261,6 @@
                 
                 // Точный геометрический расчет центра посадки при вертикальном падении
                 let landingCenterY = FLOOR_Y - catRadius;
-                const bodies = Composite.allBodies(engine.world);
                 
                 for (let i = 0; i < bodies.length; i++) {
                     const b = bodies[i];
@@ -1234,49 +1281,31 @@
                 
                 const lineEndY = landingCenterY - catRadius;
 
-                // 1. Контрастная пунктирная линия с двойным белым свечением под любой фон
+                // 2.1. Сплошная линия падения без свечения
                 if (lineEndY > startY) {
                     ctx.save();
                     ctx.beginPath();
-                    ctx.setLineDash([6, 6]);
+                    ctx.setLineDash([]); // Сплошная линия
                     ctx.moveTo(guideX, startY);
                     ctx.lineTo(guideX, lineEndY);
-                    ctx.strokeStyle = '#D35400';
+                    ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 3;
-                    ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
-                    ctx.shadowBlur = 8;
                     ctx.stroke();
                     ctx.restore();
                 }
 
-                // 2. Четкий пунктирный контур габаритов шарика в месте приземления
+                // 2.2. Пунктирный контур габаритов шарика в месте приземления
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(guideX, landingCenterY, catRadius, 0, Math.PI * 2);
                 ctx.lineWidth = 2.5;
-                ctx.setLineDash([5, 5]);
-                ctx.strokeStyle = '#D35400';
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
-                ctx.shadowBlur = 8;
+                ctx.setLineDash([5, 5]); // Пунктир только для шарика
+                ctx.strokeStyle = '#ffffff';
                 ctx.stroke();
                 ctx.restore();
             }
 
-            ctx.beginPath();
-            ctx.moveTo(0, gameOverLineY);
-            ctx.lineTo(GAME_WIDTH, gameOverLineY);
-            ctx.strokeStyle = '#ff3333'; 
-            ctx.lineWidth = 4; 
-            ctx.lineCap = 'round'; 
-            ctx.setLineDash([15, 12]); 
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#ff3333';
-            ctx.stroke();
-            ctx.setLineDash([]); 
-            ctx.lineCap = 'butt'; 
-            ctx.shadowBlur = 0; 
-
-            const bodies = Composite.allBodies(engine.world);
+            // 3. Отрисовка спрайтов котиков
             for (let body of bodies) {
                 if (body.label >= 0 && body.label <= 10) {
                     const data = CAT_LEVELS[body.label];
@@ -1313,6 +1342,7 @@
                 }
             }
 
+            // 4. Отрисовка анимаций слияния
             for (let anim of mergeAnimations) {
                 const data = CAT_LEVELS[anim.level];
                 if (!data.img || !data.img.complete) continue;
