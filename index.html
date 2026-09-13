@@ -364,25 +364,38 @@
 
         .player-input-box {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             margin-bottom: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            align-items: center;
         }
 
         .player-input-box input {
             flex: 1;
-            padding: 10px 12px;
+            min-width: 0; /* Позволяет input сжиматься в flex-контейнере */
+            padding: 8px 10px;
             border-radius: 10px;
             border: 2px solid #C48A5E;
-            font-size: 15px;
+            font-size: 14px;
             font-family: inherit;
             font-weight: 600;
             color: #5D4037;
             background: white;
             outline: none;
+            box-sizing: border-box;
         }
 
         .player-input-box input:focus {
             border-color: #D35400;
+        }
+
+        .player-input-box .btn-save-score {
+            flex-shrink: 0;
+            padding: 9px 12px;
+            font-size: 13px;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
         }
 
         .merge-glow {
@@ -577,7 +590,7 @@
                     <h2>Таблица рекордов</h2>
                     <div class="player-input-box">
                         <input type="text" id="player-nickname" placeholder="Твое имя / ник" maxlength="14" value="Игрок">
-                        <button class="menu-btn btn-primary" style="padding:10px 14px; font-size:14px;" onclick="saveCurrentScoreToLeaderboard()">Сохранить</button>
+                        <button class="menu-btn btn-primary btn-save-score" onclick="saveCurrentScoreToLeaderboard()">Сохранить</button>
                     </div>
                     <div id="leaderboard-list" class="leaderboard-list"></div>
                     <button class="menu-btn btn-secondary" onclick="closeLeaderboard()">Закрыть</button>
