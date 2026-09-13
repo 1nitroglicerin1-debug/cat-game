@@ -628,48 +628,166 @@
             <!-- Settings / Pause Menu -->
             <div id="settings-modal" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Пауза</h2>
-                    <button class="menu-btn btn-primary" onclick="closeSettings(event)">Продолжить</button>
+                    <h2 id="i18n-pause-title">Пауза</h2>
+                    <button class="menu-btn btn-primary" id="i18n-continue" onclick="closeSettings(event)">Продолжить</button>
+                    <button class="menu-btn btn-secondary" id="btn-lang" onclick="toggleLanguage()">Язык: RU</button>
                     <button class="menu-btn btn-secondary" id="btn-sound" onclick="toggleSound()">Звук: Вкл</button>
-                    <button class="menu-btn btn-secondary" onclick="resetGameWrapper(event)">Начать заново</button>
-                    <button class="menu-btn btn-accent" onclick="showLeaderboard()">Таблица рекордов</button>
+                    <button class="menu-btn btn-secondary" id="i18n-restart" onclick="resetGameWrapper(event)">Начать заново</button>
+                    <button class="menu-btn btn-accent" id="i18n-leaderboard" onclick="showLeaderboard()">Таблица рекордов</button>
                 </div>
             </div>
             
             <!-- Leaderboard Menu -->
             <div id="leaderboard-modal" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Таблица рекордов</h2>
+                    <h2 id="i18n-leaderboard-title">Таблица рекордов</h2>
                     <div class="player-input-box">
                         <input type="text" id="player-nickname" placeholder="Твое имя / ник" maxlength="14" value="Игрок">
-                        <button class="menu-btn btn-primary btn-save-score" onclick="saveCurrentScoreToLeaderboard()">Сохранить</button>
+                        <button class="menu-btn btn-primary btn-save-score" id="i18n-btn-save" onclick="saveCurrentScoreToLeaderboard()">Сохранить</button>
                     </div>
                     <div id="leaderboard-list" class="leaderboard-list"></div>
-                    <button class="menu-btn btn-secondary" onclick="closeLeaderboard()">Закрыть</button>
+                    <button class="menu-btn btn-secondary" id="i18n-close-lb" onclick="closeLeaderboard()">Закрыть</button>
                 </div>
             </div>
 
             <!-- Game Over Menu -->
             <div id="game-over-screen" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Игра окончена!</h2>
+                    <h2 id="i18n-gameover-title">Игра окончена!</h2>
                     <p style="font-size: 19px; margin: 4px 0 12px 0; color: #5D4037;">
-                        Итоговый счет: <span id="final-score" style="font-weight: bold; color: #D35400;">0</span>
+                        <span id="i18n-final-score">Итоговый счет: </span><span id="final-score" style="font-weight: bold; color: #D35400;">0</span>
                     </p>
                     <button class="menu-btn btn-reward" id="btn-free-rescue" onclick="useFreeRescue(event)">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="5 3 19 12 5 21 5 3"></polygon>
                         </svg>
-                        <span>Спастись (1/1)</span>
+                        <span id="i18n-rescue">Спастись (1/1)</span>
                     </button>
-                    <button class="menu-btn btn-accent" onclick="openLeaderboardFromGameOver(event)">Таблица рекордов</button>
-                    <button class="menu-btn btn-primary" onclick="resetGameWrapper(event)">Играть еще</button>
+                    <button class="menu-btn btn-accent" id="i18n-go-leaderboard" onclick="openLeaderboardFromGameOver(event)">Таблица рекордов</button>
+                    <button class="menu-btn btn-primary" id="i18n-play-again" onclick="resetGameWrapper(event)">Играть еще</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        const translations = {
+            ru: {
+                score: "Счет: ",
+                next: "След.",
+                pause_title: "Пауза",
+                continue: "Продолжить",
+                lang_btn: "Язык: RU",
+                sound_on: "Звук: Вкл",
+                sound_off: "Звук: Выкл",
+                restart: "Начать заново",
+                leaderboard: "Таблица рекордов",
+                leaderboard_title: "Таблица рекордов",
+                save_btn: "Сохранить",
+                close: "Закрыть",
+                gameover_title: "Игра окончена!",
+                final_score: "Итоговый счет: ",
+                rescue: "Спастись (1/1)",
+                play_again: "Играть еще",
+                target_prompt: "Убери до 3 котиков (осталось: {n})",
+                target_empty: "Нет подходящих котиков (ур. 1-4)!",
+                booster_title: "Убрать котика (1 раз за игру)",
+                default_name: "Игрок"
+            },
+            en: {
+                score: "Score: ",
+                next: "Next",
+                pause_title: "Pause",
+                continue: "Continue",
+                lang_btn: "Language: EN",
+                sound_on: "Sound: On",
+                sound_off: "Sound: Off",
+                restart: "Restart",
+                leaderboard: "Leaderboard",
+                leaderboard_title: "Leaderboard",
+                save_btn: "Save",
+                close: "Close",
+                gameover_title: "Game Over!",
+                final_score: "Final Score: ",
+                rescue: "Rescue (1/1)",
+                play_again: "Play Again",
+                target_prompt: "Remove up to 3 cats ({n} left)",
+                target_empty: "No eligible cats (lv. 1-4)!",
+                booster_title: "Remove cat (1 per game)",
+                default_name: "Player"
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            const scoreLabel = document.querySelector('#score-box span:first-child');
+            if (scoreLabel) scoreLabel.innerText = t.score;
+
+            const nextLabel = document.querySelector('.next-label');
+            if (nextLabel) nextLabel.innerText = t.next;
+
+            const pTitle = document.getElementById('i18n-pause-title');
+            if (pTitle) pTitle.innerText = t.pause_title;
+
+            const pCont = document.getElementById('i18n-continue');
+            if (pCont) pCont.innerText = t.continue;
+
+            const pLang = document.getElementById('btn-lang');
+            if (pLang) pLang.innerText = t.lang_btn;
+
+            const pRestart = document.getElementById('i18n-restart');
+            if (pRestart) pRestart.innerText = t.restart;
+
+            const pLb = document.getElementById('i18n-leaderboard');
+            if (pLb) pLb.innerText = t.leaderboard;
+
+            const lbTitle = document.getElementById('i18n-leaderboard-title');
+            if (lbTitle) lbTitle.innerText = t.leaderboard_title;
+
+            const lbSave = document.getElementById('i18n-btn-save');
+            if (lbSave) lbSave.innerText = t.save_btn;
+
+            const lbClose = document.getElementById('i18n-close-lb');
+            if (lbClose) lbClose.innerText = t.close;
+
+            const goTitle = document.getElementById('i18n-gameover-title');
+            if (goTitle) goTitle.innerText = t.gameover_title;
+
+            const goScore = document.getElementById('i18n-final-score');
+            if (goScore) goScore.innerText = t.final_score;
+
+            const goRescue = document.getElementById('i18n-rescue');
+            if (goRescue) goRescue.innerText = t.rescue;
+
+            const goLb = document.getElementById('i18n-go-leaderboard');
+            if (goLb) goLb.innerText = t.leaderboard;
+
+            const goPlay = document.getElementById('i18n-play-again');
+            if (goPlay) goPlay.innerText = t.play_again;
+
+            const boosterBtn = document.getElementById('btn-undo-booster');
+            if (boosterBtn) boosterBtn.title = t.booster_title;
+
+            const nameInput = document.getElementById('player-nickname');
+            if (nameInput && (nameInput.value === 'Игрок' || nameInput.value === 'Player')) {
+                nameInput.value = t.default_name;
+                nameInput.placeholder = lang === 'ru' ? 'Твое имя / ник' : 'Your name / nick';
+            }
+
+            const btnSound = document.getElementById('btn-sound');
+            if (btnSound) btnSound.innerText = isMuted ? t.sound_off : t.sound_on;
+
+            updateTargetBannerText();
+        }
+
+        function toggleLanguage() {
+            setLanguage(currentLang === 'ru' ? 'en' : 'ru');
+        }
+
         const GAME_WIDTH = 370;
         const GAME_HEIGHT = 700; 
         const FLOOR_OFFSET = 1;
@@ -1329,7 +1447,8 @@
         function updateTargetBannerText() {
             const textEl = document.getElementById('target-prompt-text');
             if (textEl) {
-                textEl.innerText = `Убери до 3 котиков (осталось: ${targetRemovalsLeft})`;
+                const t = translations[currentLang];
+                textEl.innerText = t.target_prompt.replace('{n}', targetRemovalsLeft);
             }
         }
 
@@ -1350,7 +1469,8 @@
         function alertPromptBanner(text) {
             const banner = document.getElementById('target-mode-banner');
             const textEl = document.getElementById('target-prompt-text');
-            const originalText = "Убери до 3 котиков (осталось: 3)";
+            const t = translations[currentLang];
+            const originalText = t.target_prompt.replace('{n}', targetRemovalsLeft);
             textEl.innerText = text;
             banner.style.display = 'flex';
             setTimeout(() => {
@@ -1719,7 +1839,8 @@
         function toggleSound() {
             isMuted = !isMuted;
             const btn = document.getElementById('btn-sound');
-            btn.innerText = isMuted ? "Звук: Выкл" : "Звук: Вкл";
+            const t = translations[currentLang];
+            btn.innerText = isMuted ? t.sound_off : t.sound_on;
         }
 
         function resetGameWrapper(e) {
