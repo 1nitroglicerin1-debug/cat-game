@@ -388,14 +388,14 @@
         #target-mode-banner {
             display: none;
             position: absolute;
-            top: -38px;
+            top: -12px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(253, 251, 247, 0.98);
             border: 2.5px solid #10B981;
             box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
             border-radius: 20px;
-            padding: 6px 14px;
+            padding: 5px 13px;
             z-index: 35;
             display: flex;
             align-items: center;
@@ -403,6 +403,17 @@
             animation: targetPulse 1.5s infinite alternate ease-in-out;
             pointer-events: auto;
             white-space: nowrap;
+        }
+
+        #target-overlay-canvas {
+            position: absolute;
+            top: -18px;
+            left: -18px;
+            width: 406px;
+            height: 736px;
+            pointer-events: none;
+            z-index: 25;
+            display: none;
         }
 
         .target-mode-text {
@@ -557,6 +568,9 @@
                 <span class="target-mode-text" id="i18n-target-prompt">Убери до 3 котиков (осталось: 3)</span>
                 <button class="target-cancel-btn" id="target-action-btn" onclick="cancelTargetMode(event)" title="Готово">✓</button>
             </div>
+
+            <!-- Оверлей-холст для эффектов поверх стен и пола -->
+            <canvas id="target-overlay-canvas"></canvas>
 
             <div id="canvas-wrapper"></div>
 
@@ -1442,6 +1456,13 @@
             isTargetModeActive = true;
             updateTargetBannerText();
             document.getElementById('target-mode-banner').style.display = 'flex';
+            const overlay = document.getElementById('target-overlay-canvas');
+            if (overlay) {
+                overlay.style.display = 'block';
+                const dpr = window.devicePixelRatio || 1;
+                overlay.width = 406 * dpr;
+                overlay.height = 736 * dpr;
+            }
             const btn = document.getElementById('btn-undo-booster');
             if (btn) btn.style.display = 'none';
         }
@@ -1460,6 +1481,12 @@
             if (event) event.stopPropagation();
             isTargetModeActive = false;
             document.getElementById('target-mode-banner').style.display = 'none';
+            const overlay = document.getElementById('target-overlay-canvas');
+            if (overlay) {
+                overlay.style.display = 'none';
+                const oCtx = overlay.getContext('2d');
+                oCtx.clearRect(0, 0, overlay.width, overlay.height);
+            }
             const btn = document.getElementById('btn-undo-booster');
             if (btn) btn.style.display = 'flex';
         }
@@ -1672,42 +1699,61 @@
                 }
             }
 
-            // Доминантный рендер пульсирующих контуров поверх котиков, пола и стен
-            if (isTargetModeActive) {
-                ctx.save();
+            // Доминантный рендер пульсирующих контуров поверх котиков, пола и деревянных стен через overlay-canvas
+            const overlayCanvas = document.getElementById('target-overlay-canvas');
+            if (overlayCanvas && isTargetModeActive) {
+                overlayCanvas.style.display = 'block';
+                const oCtx = overlayCanvas.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+                
+                if (overlayCanvas.width !== 406 * dpr) {
+                    overlayCanvas.width = 406 * dpr;
+                    overlayCanvas.height = 736 * dpr;
+                }
+
+                oCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                oCtx.save();
+                oCtx.scale(dpr, dpr);
+
                 for (let body of bodies) {
                     if (body !== activeDropper && !body.isStatic && !isNaN(parseInt(body.label)) && parseInt(body.label) <= 3) {
                         const data = CAT_LEVELS[body.label];
                         const pulse = 1 + Math.sin(now / 140) * 0.09;
                         const r = data.radius * pulse + 3;
 
-                        ctx.save();
-                        ctx.translate(body.position.x, body.position.y);
-                        
-                        // Яркое внешнее неоновое изумрудное свечение
-                        ctx.shadowColor = '#10B981';
-                        ctx.shadowBlur = 12;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, r, 0, Math.PI * 2);
-                        ctx.strokeStyle = '#10B981';
-                        ctx.lineWidth = 3.5;
-                        ctx.setLineDash([7, 5]);
-                        ctx.lineCap = 'round';
-                        ctx.stroke();
+                        // Офсет +18px для точной компенсации левой границы стакана
+                        const ox = body.position.x + 18;
+                        const oy = body.position.y + 18;
+
+                        oCtx.save();
+                        oCtx.translate(ox, oy);
+
+                        // Яркое внешнее неоновое изумрудное свечение поверх дерева и пола
+                        oCtx.shadowColor = '#10B981';
+                        oCtx.shadowBlur = 14;
+                        oCtx.beginPath();
+                        oCtx.arc(0, 0, r, 0, Math.PI * 2);
+                        oCtx.strokeStyle = '#10B981';
+                        oCtx.lineWidth = 3.5;
+                        oCtx.setLineDash([7, 5]);
+                        oCtx.lineCap = 'round';
+                        oCtx.stroke();
 
                         // Контрастный белый внутренний пунктир
-                        ctx.shadowBlur = 0;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, r, 0, Math.PI * 2);
-                        ctx.strokeStyle = '#ffffff';
-                        ctx.lineWidth = 1.5;
-                        ctx.setLineDash([7, 5]);
-                        ctx.stroke();
+                        oCtx.shadowBlur = 0;
+                        oCtx.beginPath();
+                        oCtx.arc(0, 0, r, 0, Math.PI * 2);
+                        oCtx.strokeStyle = '#ffffff';
+                        oCtx.lineWidth = 1.5;
+                        oCtx.setLineDash([7, 5]);
+                        oCtx.stroke();
 
-                        ctx.restore();
+                        oCtx.restore();
                     }
                 }
-                ctx.restore();
+                oCtx.restore();
+            } else if (overlayCanvas && !isTargetModeActive) {
+                overlayCanvas.style.display = 'none';
             }
 
             for (let anim of mergeAnimations) {
@@ -1859,6 +1905,12 @@
             hasRevivedThisGame = false;
             isTargetModeActive = false;
             document.getElementById('target-mode-banner').style.display = 'none';
+            const overlay = document.getElementById('target-overlay-canvas');
+            if (overlay) {
+                overlay.style.display = 'none';
+                const oCtx = overlay.getContext('2d');
+                oCtx.clearRect(0, 0, overlay.width, overlay.height);
+            }
             const boosterBtn = document.getElementById('btn-undo-booster');
             if (boosterBtn) boosterBtn.style.display = 'flex';
             
