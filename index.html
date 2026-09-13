@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cat Suika Game - Standalone Edition</title>
+    <title>Cat Suika Game</title>
     
     <!-- Matter.js Physics Engine -->
     <script src="assets/matter.min.js"></script>
+    
+    <!-- Yandex Games SDK -->
+    <script src="https://yandex.ru/games/sdk/v2"></script>
     
     <style>
         body {
@@ -362,42 +365,6 @@
             font-weight: 600;
         }
 
-        .player-input-box {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 8px;
-            width: 100%;
-            box-sizing: border-box;
-            align-items: center;
-        }
-
-        .player-input-box input {
-            flex: 1;
-            min-width: 0; /* Позволяет input сжиматься в flex-контейнере */
-            padding: 8px 10px;
-            border-radius: 10px;
-            border: 2px solid #C48A5E;
-            font-size: 14px;
-            font-family: inherit;
-            font-weight: 600;
-            color: #5D4037;
-            background: white;
-            outline: none;
-            box-sizing: border-box;
-        }
-
-        .player-input-box input:focus {
-            border-color: #D35400;
-        }
-
-        .player-input-box .btn-save-score {
-            flex-shrink: 0;
-            padding: 9px 12px;
-            font-size: 13px;
-            white-space: nowrap;
-            letter-spacing: 0.3px;
-        }
-
         .merge-glow {
             position: absolute;
             width: 120px;
@@ -445,7 +412,6 @@
             border-radius: 20px;
             padding: 5px 13px;
             z-index: 35;
-            display: flex;
             align-items: center;
             gap: 10px;
             animation: targetPulse 1.5s infinite alternate ease-in-out;
@@ -501,37 +467,6 @@
             100% { transform: translateX(-50%) scale(1.04); box-shadow: 0 8px 22px rgba(16, 185, 129, 0.5); }
         }
 
-        .target-mode-text {
-            font-size: 13px;
-            font-weight: 800;
-            color: #5D4037;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            line-height: 1.1;
-        }
-
-        .target-cancel-btn {
-            background: #E74C3C;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            font-size: 13px;
-            font-weight: 900;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            line-height: 1;
-        }
-
-        @keyframes targetPulse {
-            0% { transform: translateX(-50%) scale(1); }
-            100% { transform: translateX(-50%) scale(1.04); box-shadow: 0 8px 22px rgba(211, 84, 0, 0.5); }
-        }
-
         @keyframes glowPop {
             0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
@@ -584,26 +519,27 @@
     <div id="app-wrapper">
         <div id="top-panel">
             <div class="solid-panel score-box" id="score-box">
-                <span style="font-size:14px; margin-bottom:2px;">Счет: </span> <span id="score-val">0</span>
+                <span style="font-size:14px; margin-bottom:2px;" id="i18n-score">Счет: </span> <span id="score-val">0</span>
             </div>
             
+            <!-- Центральный блок кнопок: Настройки и Бустер -->
             <div class="center-controls">
-                <button class="solid-panel btn-ctrl" onclick="openSettings(event)" title="Настройки">
+                <button class="solid-panel btn-ctrl" onclick="openSettings(event)" title="Settings">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3"></circle>
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                     </svg>
                 </button>
 
-                <!-- Автономный бустер: 1 раз за игру -->
-                <button id="btn-undo-booster" class="solid-panel btn-ctrl booster-btn" onclick="useFreeBooster(event)" title="Убрать котика (1 раз за игру)">
+                <!-- Бустер с подтверждением и бейджиком 1/1 -->
+                <button id="btn-undo-booster" class="solid-panel btn-ctrl booster-btn" onclick="openBoosterModal(event)" title="Убрать котика (1 раз за игру)">
                     <span class="booster-icon">🧹</span>
                     <span id="booster-badge-count" class="booster-badge">1/1</span>
                 </button>
             </div>
 
             <div class="solid-panel next-box-container">
-                <div class="next-label">След.</div>
+                <div class="next-label" id="i18n-next">След.</div>
                 <div class="next-img-wrapper">
                     <img id="next-item-img" src="" alt="Next Cat">
                 </div>
@@ -611,12 +547,13 @@
         </div>
 
         <div id="game-container">
-            <div id="target-mode-banner" style="display: none;">
-                <span class="target-mode-text" id="target-prompt-text">Убери до 3 котиков (осталось: 3)</span>
+            <!-- Плашка режима удаления котиков -->
+            <div id="target-mode-banner">
+                <span class="target-mode-text" id="i18n-target-prompt">Убери до 3 котиков (осталось: 3)</span>
                 <button class="target-cancel-btn" onclick="cancelTargetMode(event)" title="Готово">✓</button>
             </div>
 
-            <!-- Оверлей-холст для эффектов поверх стен и пола -->
+            <!-- Оверлей-холст для свечения поверх деревянных стен и пола -->
             <canvas id="target-overlay-canvas"></canvas>
 
             <div id="canvas-wrapper"></div>
@@ -628,48 +565,166 @@
             <!-- Settings / Pause Menu -->
             <div id="settings-modal" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Пауза</h2>
-                    <button class="menu-btn btn-primary" onclick="closeSettings(event)">Продолжить</button>
+                    <h2 id="i18n-pause-title">Пауза</h2>
+                    <button class="menu-btn btn-primary" id="i18n-continue" onclick="closeSettings(event)">Продолжить</button>
                     <button class="menu-btn btn-secondary" id="btn-sound" onclick="toggleSound()">Звук: Вкл</button>
-                    <button class="menu-btn btn-secondary" onclick="resetGameWrapper(event)">Начать заново</button>
-                    <button class="menu-btn btn-accent" onclick="showLeaderboard()">Таблица рекордов</button>
+                    <button class="menu-btn btn-secondary" id="i18n-restart" onclick="resetGameWrapper(event)">Начать заново</button>
+                    <button class="menu-btn btn-accent" id="i18n-leaderboard" onclick="showLeaderboard()">Таблица рекордов</button>
+                </div>
+            </div>
+
+            <!-- Booster Confirmation Modal -->
+            <div id="booster-modal" class="modal-overlay">
+                <div class="menu-content">
+                    <h2 id="i18n-booster-title">Бустер «Метёлка»</h2>
+                    <p id="i18n-booster-desc" style="font-size: 16px; margin: 4px 0 10px 0; color: #5D4037; line-height: 1.4;">
+                        Посмотрите короткое видео, чтобы убрать до 3 котиков (ур. 1–4)?
+                    </p>
+                    <button class="menu-btn btn-reward" id="btn-confirm-booster" onclick="confirmBoosterAd(event)">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span id="i18n-booster-watch">Смотреть (Реклама)</span>
+                    </button>
+                    <button class="menu-btn btn-secondary" id="i18n-booster-cancel" onclick="closeBoosterModal(event)">Отмена</button>
                 </div>
             </div>
             
             <!-- Leaderboard Menu -->
             <div id="leaderboard-modal" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Таблица рекордов</h2>
-                    <div class="player-input-box">
-                        <input type="text" id="player-nickname" placeholder="Твое имя / ник" maxlength="14" value="Игрок">
-                        <button class="menu-btn btn-primary btn-save-score" onclick="saveCurrentScoreToLeaderboard()">Сохранить</button>
+                    <h2 id="i18n-leaderboard-title">Рекорды</h2>
+                    <div id="leaderboard-list" class="leaderboard-list">
+                        <div style="padding: 10px; color: #7f8c8d;">Загрузка...</div>
                     </div>
-                    <div id="leaderboard-list" class="leaderboard-list"></div>
-                    <button class="menu-btn btn-secondary" onclick="closeLeaderboard()">Закрыть</button>
+                    <button class="menu-btn btn-secondary" id="i18n-close-lb" onclick="closeLeaderboard()">Закрыть</button>
                 </div>
             </div>
 
             <!-- Game Over Menu -->
             <div id="game-over-screen" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Игра окончена!</h2>
+                    <h2 id="i18n-gameover-title">Игра окончена!</h2>
                     <p style="font-size: 19px; margin: 4px 0 12px 0; color: #5D4037;">
-                        Итоговый счет: <span id="final-score" style="font-weight: bold; color: #D35400;">0</span>
+                        <span id="i18n-final-score">Итоговый счет: </span><span id="final-score" style="font-weight: bold; color: #D35400;">0</span>
                     </p>
-                    <button class="menu-btn btn-reward" id="btn-free-rescue" onclick="useFreeRescue(event)">
+                    <button class="menu-btn btn-reward" id="btn-save-gameover" onclick="useRewardedRescue(event)">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="5 3 19 12 5 21 5 3"></polygon>
                         </svg>
-                        <span>Спастись (1/1)</span>
+                        <span id="i18n-save">Спастись (Видео)</span>
                     </button>
-                    <button class="menu-btn btn-accent" onclick="openLeaderboardFromGameOver(event)">Таблица рекордов</button>
-                    <button class="menu-btn btn-primary" onclick="resetGameWrapper(event)">Играть еще</button>
+                    <button class="menu-btn btn-primary" id="i18n-play-again" onclick="resetGameWrapper(event)">Играть еще</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        const translations = {
+            ru: {
+                score: "Счет: ",
+                next: "След.",
+                pause_title: "ПАУЗА",
+                continue: "ПРОДОЛЖИТЬ",
+                sound_on: "ЗВУК: ВКЛ",
+                sound_off: "ЗВУК: ВЫКЛ",
+                restart: "НАЧАТЬ ЗАНОВО",
+                leaderboard: "ТАБЛИЦА РЕКОРДОВ",
+                leaderboard_title: "РЕКОРДЫ",
+                gameover_title: "ИГРА ОКОНЧЕНА!",
+                final_score: "Итоговый счет: ",
+                play_again: "ИГРАТЬ ЕЩЕ",
+                loading: "Загрузка...",
+                anonymous: "Аноним",
+                close: "ЗАКРЫТЬ",
+                lb_empty: "Нет данных",
+                lb_error: "Ошибка загрузки данных",
+                save: "СПАСТИСЬ (ВИДЕО)",
+                undo_title: "Убрать котика (1 раз за игру)",
+                target_prompt: "Убери до 3 котиков (осталось: 3)",
+                target_empty: "Нет подходящих котиков (ур. 1-4)!",
+                booster_title: "БУСТЕР «МЕТЁЛКА»",
+                booster_desc: "Посмотрите короткое видео, чтобы убрать до 3 котиков (ур. 1–4)?",
+                booster_watch: "СМОТРЕТЬ (РЕКЛАМА)",
+                cancel: "ОТМЕНА"
+            },
+            en: {
+                score: "Score: ",
+                next: "Next",
+                pause_title: "PAUSE",
+                continue: "CONTINUE",
+                sound_on: "SOUND: ON",
+                sound_off: "SOUND: OFF",
+                restart: "RESTART",
+                leaderboard: "LEADERBOARD",
+                leaderboard_title: "TOP SCORES",
+                gameover_title: "GAME OVER!",
+                final_score: "Final Score: ",
+                play_again: "PLAY AGAIN",
+                loading: "Loading...",
+                anonymous: "Anonymous",
+                close: "CLOSE",
+                lb_empty: "No data",
+                lb_error: "Failed to load data",
+                save: "RESCUE (AD)",
+                undo_title: "Remove cat (1 per game)",
+                target_prompt: "Remove up to 3 cats (3 left)",
+                target_empty: "No eligible cats (lv. 1-4)!",
+                booster_title: "BROOM BOOSTER",
+                booster_desc: "Watch a short video to remove up to 3 cats (lv. 1–4)?",
+                booster_watch: "WATCH (AD)",
+                cancel: "CANCEL"
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            
+            document.getElementById('i18n-score').innerText = t.score;
+            document.getElementById('i18n-next').innerText = t.next;
+            document.getElementById('i18n-pause-title').innerText = t.pause_title;
+            document.getElementById('i18n-continue').innerText = t.continue;
+            document.getElementById('i18n-restart').innerText = t.restart;
+            document.getElementById('i18n-leaderboard').innerText = t.leaderboard;
+            document.getElementById('i18n-leaderboard-title').innerText = t.leaderboard_title;
+            document.getElementById('i18n-gameover-title').innerText = t.gameover_title;
+            document.getElementById('i18n-final-score').innerText = t.final_score;
+            document.getElementById('i18n-play-again').innerText = t.play_again;
+            document.getElementById('i18n-close-lb').innerText = t.close;
+            document.getElementById('i18n-save').innerText = t.save;
+            
+            const promptEl = document.getElementById('i18n-target-prompt');
+            if (promptEl) promptEl.innerText = t.target_prompt;
+
+            const undoBtn = document.getElementById('btn-undo-booster');
+            if (undoBtn) undoBtn.title = t.undo_title;
+            
+            const bTitle = document.getElementById('i18n-booster-title');
+            if (bTitle) bTitle.innerText = t.booster_title;
+
+            const bDesc = document.getElementById('i18n-booster-desc');
+            if (bDesc) bDesc.innerText = t.booster_desc;
+
+            const bWatch = document.getElementById('i18n-booster-watch');
+            if (bWatch) bWatch.innerText = t.booster_watch;
+
+            const bCancel = document.getElementById('i18n-booster-cancel');
+            if (bCancel) bCancel.innerText = t.cancel;
+
+            const soundBtn = document.getElementById('btn-sound');
+            soundBtn.innerText = isMuted ? t.sound_off : t.sound_on;
+        }
+
+        let ysdk = null;
+        let ysdkLeaderboard = null;
+        let restartCount = 0;
+        let isAudioSuspendedForAd = false;
+        let hasRevivedThisGame = false;
+
         const GAME_WIDTH = 370;
         const GAME_HEIGHT = 700; 
         const FLOOR_OFFSET = 1;
@@ -691,21 +746,6 @@
 
         const mergeScores = [0, 0, 10, 30, 60, 100, 150, 210, 280, 360, 450, 550];
 
-        // Локальная таблица рекордов для друзей (хранится в памяти сессии)
-        let localLeaderboard = [
-            { name: "Барсик 👑", score: 3240 },
-            { name: "Мурзик", score: 2850 },
-            { name: "Симба", score: 2310 },
-            { name: "Котофей", score: 1980 },
-            { name: "Люцифер", score: 1520 },
-            { name: "Булочка", score: 1200 },
-            { name: "Зефирка", score: 860 }
-        ];
-
-        let currentPlayerName = "Игрок";
-        let hasSavedCurrentRun = false;
-
-        // Физический движок Matter.js
         const Engine = Matter.Engine,
               Render = Matter.Render,
               Runner = Matter.Runner,
@@ -739,12 +779,9 @@
 
         let comboCount = 0;
         let lastMergeTime = 0;
-
-        // Ограничения автономных бонусов (1 раз за игровую сессию)
-        let hasUsedBoosterThisGame = false;
-        let hasRevivedThisGame = false;
         let isTargetModeActive = false;
         let targetRemovalsLeft = 3;
+        let hasUsedBoosterThisGame = false;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffers = {};
@@ -766,13 +803,13 @@
                     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                     audioBuffers[name] = audioBuffer;
                 } catch (error) {
-                    console.log(`[Звук ${name}]: загрузка не выполнена или оффлайн`);
+                    console.log(`[Audio ${name}]: failed to load via network`);
                 }
             }
         }
 
         function unlockAudio() {
-            if (audioCtx && audioCtx.state === 'suspended') {
+            if (audioCtx && audioCtx.state === 'suspended' && !isAudioSuspendedForAd) {
                 audioCtx.resume();
             }
         }
@@ -782,7 +819,7 @@
         document.addEventListener('mousedown', unlockAudio, { passive: true });
 
         function playSound(name, volumeMultiplier = 1.0, playbackRate = 1.0) {
-            if (isMuted || !audioCtx || !audioBuffers[name]) return;
+            if (isMuted || !audioCtx || !audioBuffers[name] || isAudioSuspendedForAd) return;
             try {
                 const source = audioCtx.createBufferSource();
                 source.buffer = audioBuffers[name];
@@ -837,7 +874,6 @@
 
             rollNextCat();
             spawnDropper(); 
-            renderLeaderboardUI();
         }
 
         function setupPhysicsWorld() {
@@ -967,7 +1003,7 @@
                 if (isGameOver || isPaused || isTargetModeActive) return;
                 
                 if (e.target && e.target.closest) {
-                    if (e.target.closest('#top-panel') || e.target.closest('.modal-overlay') || e.target.closest('.booster-btn') || e.target.closest('#target-mode-banner')) return;
+                    if (e.target.closest('#top-panel') || e.target.closest('.modal-overlay') || e.target.closest('.booster-btn') || e.target.closest('#target-mode-banner') || e.target.closest('#booster-modal')) return;
                 }
                 
                 let xPos = getXPos(e);
@@ -984,9 +1020,10 @@
                 if (isGameOver || isPaused) return;
 
                 if (e.target && e.target.closest) {
-                    if (e.target.closest('#top-panel') || e.target.closest('.modal-overlay') || e.target.closest('.booster-btn') || e.target.closest('#target-mode-banner')) return;
+                    if (e.target.closest('#top-panel') || e.target.closest('.modal-overlay') || e.target.closest('.booster-btn') || e.target.closest('#target-mode-banner') || e.target.closest('#booster-modal')) return;
                 }
 
+                // Режим прицельного удаления котика (уровни 0-3)
                 if (isTargetModeActive) {
                     const coords = getCanvasCoords(e);
                     const clickedCat = findTargetCatAt(coords.x, coords.y);
@@ -1237,14 +1274,13 @@
 
         function triggerGameOver() {
             isGameOver = true;
-            hasSavedCurrentRun = false;
             document.getElementById('warning-screen').style.display = 'none';
             Matter.Runner.stop(runner);
             playSound('gameover'); 
             
             document.getElementById('final-score').innerText = currentScore;
             
-            const btnSave = document.getElementById('btn-free-rescue');
+            const btnSave = document.getElementById('btn-save-gameover');
             if (!hasRevivedThisGame) {
                 btnSave.style.display = 'flex';
                 btnSave.disabled = false;
@@ -1253,12 +1289,40 @@
             }
             
             document.getElementById('game-over-screen').style.display = 'flex';
+            saveScoreToLeaderboard(currentScore);
         }
 
-        function useFreeRescue(event) {
+        function useRewardedRescue(event) {
             if (event) event.stopPropagation();
             if (hasRevivedThisGame) return;
 
+            if (!ysdk || !ysdk.adv) {
+                console.log("Реклама не поддерживается локально — спасаем игрока для теста");
+                applyRescue();
+                return;
+            }
+
+            ysdk.adv.showRewardedVideo({
+                callbacks: {
+                    onOpen: () => {
+                        isAudioSuspendedForAd = true;
+                        if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                    },
+                    onRewarded: () => {
+                        applyRescue();
+                    },
+                    onClose: () => {
+                        isAudioSuspendedForAd = false;
+                        if (!isMuted && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                    },
+                    onError: (e) => {
+                        console.log('Ошибка rewarded рекламы', e);
+                    }
+                }
+            });
+        }
+
+        function applyRescue() {
             hasRevivedThisGame = true;
             isGameOver = false;
             document.getElementById('game-over-screen').style.display = 'none';
@@ -1286,7 +1350,7 @@
             spawnDropper();
         }
 
-        function useFreeBooster(event) {
+        function openBoosterModal(event) {
             if (event) event.stopPropagation();
             if (isGameOver || isPaused || isTargetModeActive || hasUsedBoosterThisGame) return;
 
@@ -1303,11 +1367,69 @@
             }
             
             if (!hasEligibleCats) {
-                alertPromptBanner("Нет подходящих котиков (ур. 1-4)!");
+                const t = translations[currentLang];
+                alertPromptBanner(t.target_empty);
                 return;
             }
 
-            enableTargetMode();
+            if (runner) runner.enabled = false;
+            document.getElementById('booster-modal').style.display = 'flex';
+        }
+
+        function closeBoosterModal(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('booster-modal').style.display = 'none';
+            if (runner && !isGameOver && !isPaused) {
+                runner.enabled = true;
+            }
+        }
+
+        function confirmBoosterAd(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('booster-modal').style.display = 'none';
+
+            if (!ysdk || !ysdk.adv) {
+                console.log("Реклама не поддерживается локально — включаем выбор котика для теста");
+                markBoosterUsed();
+                enableTargetMode();
+                return;
+            }
+
+            ysdk.adv.showRewardedVideo({
+                callbacks: {
+                    onOpen: () => {
+                        isAudioSuspendedForAd = true;
+                        if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                        if (runner) runner.enabled = false;
+                    },
+                    onRewarded: () => {
+                        markBoosterUsed();
+                        enableTargetMode();
+                    },
+                    onClose: () => {
+                        isAudioSuspendedForAd = false;
+                        if (!isMuted && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                        if (runner && !isGameOver && !isPaused && !isTargetModeActive) runner.enabled = true;
+                    },
+                    onError: (e) => {
+                        console.log('Ошибка rewarded рекламы бустера', e);
+                        if (runner && !isGameOver && !isPaused) runner.enabled = true;
+                    }
+                }
+            });
+        }
+
+        function markBoosterUsed() {
+            hasUsedBoosterThisGame = true;
+            const badge = document.getElementById('booster-badge-count');
+            const boosterBtn = document.getElementById('btn-undo-booster');
+            if (badge) {
+                badge.innerText = "0/1";
+                badge.classList.add('used');
+            }
+            if (boosterBtn) {
+                boosterBtn.classList.add('disabled');
+            }
         }
 
         function enableTargetMode() {
@@ -1327,9 +1449,12 @@
         }
 
         function updateTargetBannerText() {
-            const textEl = document.getElementById('target-prompt-text');
-            if (textEl) {
+            const textEl = document.getElementById('i18n-target-prompt');
+            if (!textEl) return;
+            if (currentLang === 'ru') {
                 textEl.innerText = `Убери до 3 котиков (осталось: ${targetRemovalsLeft})`;
+            } else {
+                textEl.innerText = `Remove up to 3 cats (${targetRemovalsLeft} left)`;
             }
         }
 
@@ -1349,14 +1474,14 @@
 
         function alertPromptBanner(text) {
             const banner = document.getElementById('target-mode-banner');
-            const textEl = document.getElementById('target-prompt-text');
-            const originalText = "Убери до 3 котиков (осталось: 3)";
+            const textEl = document.getElementById('i18n-target-prompt');
+            const t = translations[currentLang];
             textEl.innerText = text;
             banner.style.display = 'flex';
             setTimeout(() => {
                 if (!isTargetModeActive) {
                     banner.style.display = 'none';
-                    textEl.innerText = originalText;
+                    textEl.innerText = t.target_prompt;
                 }
             }, 1800);
         }
@@ -1394,17 +1519,6 @@
 
             isWarningActive = false;
             document.getElementById('warning-screen').style.display = 'none';
-
-            hasUsedBoosterThisGame = true;
-            const badge = document.getElementById('booster-badge-count');
-            const boosterBtn = document.getElementById('btn-undo-booster');
-            if (badge) {
-                badge.innerText = "0/1";
-                badge.classList.add('used');
-            }
-            if (boosterBtn) {
-                boosterBtn.classList.add('disabled');
-            }
 
             targetRemovalsLeft--;
 
@@ -1557,7 +1671,7 @@
                 }
             }
 
-            // Доминантный рендер пульсирующих контуров поверх котиков, пола и стен через overlay-canvas
+            // Доминантный рендер пульсирующих контуров поверх котиков, стен и пола
             const overlayCanvas = document.getElementById('target-overlay-canvas');
             if (overlayCanvas && isTargetModeActive) {
                 overlayCanvas.style.display = 'block';
@@ -1579,14 +1693,12 @@
                         const pulse = 1 + Math.sin(now / 140) * 0.09;
                         const r = data.radius * pulse + 3;
 
-                        // Офсет +18px для точной компенсации левой границы стакана
                         const ox = body.position.x + 18;
                         const oy = body.position.y + 18;
 
                         oCtx.save();
                         oCtx.translate(ox, oy);
                         
-                        // Яркое внешнее изумрудное свечение поверх деревянных стен и пола
                         oCtx.shadowColor = '#10B981';
                         oCtx.shadowBlur = 14;
                         oCtx.beginPath();
@@ -1597,7 +1709,6 @@
                         oCtx.lineCap = 'round';
                         oCtx.stroke();
 
-                        // Белый внутренний контур для идеального контраста
                         oCtx.shadowBlur = 0;
                         oCtx.beginPath();
                         oCtx.arc(0, 0, r, 0, Math.PI * 2);
@@ -1719,11 +1830,33 @@
         function toggleSound() {
             isMuted = !isMuted;
             const btn = document.getElementById('btn-sound');
-            btn.innerText = isMuted ? "Звук: Выкл" : "Звук: Вкл";
+            const t = translations[currentLang];
+            btn.innerText = isMuted ? t.sound_off : t.sound_on;
         }
 
         function resetGameWrapper(e) {
-            executeReset(e);
+            restartCount++;
+            if (restartCount % 3 === 0 && ysdk && ysdk.adv) {
+                ysdk.adv.showFullscreenAdv({
+                    callbacks: {
+                        onOpen: () => {
+                            isAudioSuspendedForAd = true;
+                            if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                        },
+                        onClose: () => {
+                            isAudioSuspendedForAd = false;
+                            if (!isMuted && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                            executeReset(e);
+                        },
+                        onError: () => {
+                            isAudioSuspendedForAd = false;
+                            executeReset(e);
+                        }
+                    }
+                });
+            } else {
+                executeReset(e);
+            }
         }
 
         function executeReset(e) {
@@ -1732,10 +1865,10 @@
             isGameOver = false;
             hasRevivedThisGame = false;
             hasUsedBoosterThisGame = false;
-            hasSavedCurrentRun = false;
             isTargetModeActive = false;
             
             document.getElementById('target-mode-banner').style.display = 'none';
+            document.getElementById('booster-modal').style.display = 'none';
             const overlay = document.getElementById('target-overlay-canvas');
             if (overlay) {
                 overlay.style.display = 'none';
@@ -1795,83 +1928,113 @@
             spawnDropper();
         }
 
-        function renderLeaderboardUI() {
-            const listContainer = document.getElementById('leaderboard-list');
-            if (!listContainer) return;
+        function initYandexSDK() {
+            if (typeof YaGames !== 'undefined') {
+                YaGames.init().then(_ysdk => {
+                    ysdk = _ysdk;
+                    console.log('Yandex SDK инициализирован');
 
-            localLeaderboard.sort((a, b) => b.score - a.score);
-            let top10 = localLeaderboard.slice(0, 10);
+                    try {
+                        const userLang = ysdk.environment.i18n.lang;
+                        if (userLang === 'ru' || userLang === 'be' || userLang === 'uk' || userLang === 'kk') {
+                            setLanguage('ru');
+                        } else {
+                            setLanguage('en');
+                        }
+                    } catch(e) {
+                        setLanguage('ru');
+                    }
 
-            let html = '';
-            top10.forEach((entry, index) => {
-                const rank = index + 1;
-                let rankClass = 'rank-normal';
-                if (rank <= 3) {
-                    rankClass = 'rank-rainbow';
-                } else if (rank <= 5) {
-                    rankClass = 'rank-colored';
-                }
-                
-                const isCurrentPlayer = entry.name.startsWith(currentPlayerName);
-                const itemClass = isCurrentPlayer ? 'leaderboard-item is-player' : 'leaderboard-item';
-
-                html += `
-                    <div class="${itemClass}">
-                        <span class="rank-name ${rankClass}">${rank}. ${entry.name}</span>
-                        <span class="${rankClass}">${entry.score}</span>
-                    </div>
-                `;
-            });
-
-            listContainer.innerHTML = html;
+                    ysdk.getLeaderboards().then(_lb => {
+                        ysdkLeaderboard = _lb;
+                    }).catch(err => {
+                        console.log('Лидерборды недоступны', err);
+                    });
+                }).catch(err => {
+                    console.log('Ошибка инициализации SDK', err);
+                    setLanguage('ru');
+                });
+            } else {
+                setLanguage('ru');
+            }
         }
 
-        function saveCurrentScoreToLeaderboard() {
-            const nameInput = document.getElementById('player-nickname');
-            let name = nameInput.value.trim() || "Игрок";
-            currentPlayerName = name;
-
-            if (currentScore > 0 && !hasSavedCurrentRun) {
-                localLeaderboard.push({ name: name, score: currentScore });
-                hasSavedCurrentRun = true;
+        function saveScoreToLeaderboard(score) {
+            if (ysdk && ysdkLeaderboard && score > 0) {
+                ysdkLeaderboard.setLeaderboardScore('topscores', score).catch(err => {
+                    console.log('Ошибка записи рекорда', err);
+                });
             }
-            renderLeaderboardUI();
         }
 
         function showLeaderboard() {
             document.getElementById('settings-modal').style.display = 'none';
             document.getElementById('leaderboard-modal').style.display = 'flex';
-            renderLeaderboardUI();
-        }
-
-        function openLeaderboardFromGameOver(e) {
-            if (e) e.stopPropagation();
-            const nameInput = document.getElementById('player-nickname');
-            nameInput.value = currentPlayerName;
             
-            if (currentScore > 0 && !hasSavedCurrentRun) {
-                localLeaderboard.push({ name: currentPlayerName, score: currentScore });
-                hasSavedCurrentRun = true;
-            }
+            const listContainer = document.getElementById('leaderboard-list');
+            const t = translations[currentLang];
+            listContainer.innerHTML = `<div style="padding: 10px; color: #7f8c8d;">${t.loading}</div>`;
 
-            document.getElementById('game-over-screen').style.display = 'none';
-            document.getElementById('leaderboard-modal').style.display = 'flex';
-            renderLeaderboardUI();
+            if (ysdk && ysdkLeaderboard) {
+                ysdkLeaderboard.getLeaderboardEntries('topscores', { quantityTop: 10, includeUser: true })
+                    .then(res => {
+                        if (!res || !res.entries || res.entries.length === 0) {
+                            listContainer.innerHTML = `<div style="padding: 10px; color: #7f8c8d;">${t.lb_empty}</div>`;
+                            return;
+                        }
+
+                        let html = '';
+                        res.entries.forEach(entry => {
+                            const name = entry.player.publicName || t.anonymous;
+                            const score = entry.score;
+                            const rank = entry.rank;
+                            const isCurrent = entry.player.uniqueID === res.userRank;
+                            
+                            let rankClass = 'rank-normal';
+                            if (rank <= 3) {
+                                rankClass = 'rank-rainbow';
+                            } else if (rank <= 5) {
+                                rankClass = 'rank-colored';
+                            }
+
+                            html += `
+                                <div class="leaderboard-item ${isCurrent ? 'is-player' : ''}">
+                                    <span class="rank-name ${rankClass}">${rank}. ${name}</span>
+                                    <span class="${rankClass}">${score}</span>
+                                </div>
+                            `;
+                        });
+                        listContainer.innerHTML = html;
+                    })
+                    .catch(err => {
+                        listContainer.innerHTML = `<div style="padding: 10px; color: #e74c3c;">${t.lb_error}</div>`;
+                    });
+            } else {
+                listContainer.innerHTML = `
+                    <div class="leaderboard-item is-player">
+                        <span class="rank-name rank-rainbow">1. ${t.anonymous}</span>
+                        <span class="rank-rainbow">${currentScore}</span>
+                    </div>
+                `;
+            }
         }
 
         function closeLeaderboard() {
             document.getElementById('leaderboard-modal').style.display = 'none';
-            if (isGameOver) {
-                document.getElementById('game-over-screen').style.display = 'flex';
-            } else if (isPaused) {
-                document.getElementById('settings-modal').style.display = 'flex'; 
+            if (isPaused) {
+                document.getElementById('settings-modal').style.display = 'flex';
             }
         }
 
         window.onload = async () => {
+            initYandexSDK();
             await preloadAudio();
             preloadImages(() => {
                 init();
+                // Обязательный вызов для успешной модерации Яндекс Игр
+                if (ysdk && ysdk.features && ysdk.features.LoadingAPI) {
+                    ysdk.features.LoadingAPI.ready();
+                }
             });
         };
     </script>
