@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cat Suika Game - Standalone Edition</title>
+    <title>Cat Suika Game</title>
     
-    <!-- Matter.js Physics Engine -->
+    <!-- Yandex Games SDK -->
+    <script src="https://yandex.ru/games/sdk/v2"></script>
+    
+    <!-- Локальный Matter.js (Требование CSP Яндекса) -->
     <script src="assets/matter.min.js"></script>
     
     <style>
@@ -111,7 +114,6 @@
             padding: 0;
             flex-shrink: 0;
             position: relative;
-            background: rgba(253, 251, 247, 0.95);
         }
 
         .btn-ctrl:active {
@@ -121,12 +123,6 @@
 
         .btn-ctrl:hover {
             background: rgba(211, 84, 0, 0.1);
-        }
-
-        .btn-ctrl.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            filter: grayscale(0.8);
         }
 
         .next-box-container {
@@ -187,6 +183,7 @@
             box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5), 0 10px 20px rgba(0, 0, 0, 0.3); 
         }
 
+        /* Кнопка-бустер удаления котика в верхней панели */
         .booster-btn {
             user-select: none;
             -webkit-user-select: none;
@@ -212,10 +209,6 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
             pointer-events: none;
             line-height: 1;
-        }
-
-        .booster-badge.used {
-            background: #9CA3AF;
         }
 
         #canvas-wrapper {
@@ -250,29 +243,28 @@
             background: rgba(253, 251, 247, 0.95);
             border: 4px solid #C48A5E;
             border-radius: 20px;
-            padding: 24px;
+            padding: 30px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             text-align: center;
             width: 85%;
-            max-width: 330px;
-            box-sizing: border-box;
+            max-width: 320px;
         }
 
         .menu-content h2 {
             color: #D35400;
-            font-size: 26px;
-            margin-bottom: 6px;
+            font-size: 28px;
+            margin-bottom: 10px;
             font-weight: 800;
             text-transform: uppercase;
             margin-top: 0;
         }
 
         .menu-btn {
-            padding: 13px;
-            font-size: 16px;
+            padding: 15px;
+            font-size: 18px;
             font-weight: 800;
             text-transform: uppercase;
             border-radius: 12px;
@@ -285,8 +277,8 @@
         }
 
         .menu-btn:active {
-            transform: translateY(3px);
-            box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 rgba(0,0,0,0.2);
         }
 
         .btn-primary { background: #D35400; }
@@ -304,10 +296,10 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            max-height: 220px;
+            max-height: 250px;
             overflow-y: auto;
             width: 100%;
-            margin-bottom: 6px;
+            margin-bottom: 10px;
             background: rgba(0,0,0,0.05);
             border-radius: 8px;
             padding: 10px;
@@ -318,17 +310,12 @@
             display: flex;
             justify-content: space-between;
             background: rgba(255,255,240,1);
-            padding: 9px 12px;
+            padding: 10px 14px;
             border-radius: 6px;
             font-weight: bold;
             color: #5D4037;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            font-size: 15px;
-        }
-
-        .leaderboard-item.is-player {
-            border: 2px solid #D35400;
-            background: #FFF5EB;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 16px;
         }
 
         .leaderboard-item .rank-name {
@@ -360,42 +347,6 @@
         .rank-normal {
             color: #5D4037;
             font-weight: 600;
-        }
-
-        .player-input-box {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 8px;
-            width: 100%;
-            box-sizing: border-box;
-            align-items: center;
-        }
-
-        .player-input-box input {
-            flex: 1;
-            min-width: 0; /* Позволяет input сжиматься в flex-контейнере */
-            padding: 8px 10px;
-            border-radius: 10px;
-            border: 2px solid #C48A5E;
-            font-size: 14px;
-            font-family: inherit;
-            font-weight: 600;
-            color: #5D4037;
-            background: white;
-            outline: none;
-            box-sizing: border-box;
-        }
-
-        .player-input-box input:focus {
-            border-color: #D35400;
-        }
-
-        .player-input-box .btn-save-score {
-            flex-shrink: 0;
-            padding: 9px 12px;
-            font-size: 13px;
-            white-space: nowrap;
-            letter-spacing: 0.3px;
         }
 
         .merge-glow {
@@ -433,23 +384,62 @@
             animation: flashFade 0.7s ease-out forwards;
         }
 
+        /* Баннер режима прицельного удаления котика */
         #target-mode-banner {
             display: none;
             position: absolute;
-            top: 12px;
+            top: -38px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(253, 251, 247, 0.96);
-            border: 2.5px solid #D35400;
-            box-shadow: 0 6px 18px rgba(211, 84, 0, 0.35);
+            background: rgba(253, 251, 247, 0.98);
+            border: 2.5px solid #10B981;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
             border-radius: 20px;
-            padding: 8px 14px;
-            z-index: 25;
+            padding: 6px 14px;
+            z-index: 35;
             display: flex;
             align-items: center;
             gap: 10px;
             animation: targetPulse 1.5s infinite alternate ease-in-out;
             pointer-events: auto;
+            white-space: nowrap;
+        }
+
+        .target-mode-text {
+            font-size: 13px;
+            font-weight: 800;
+            color: #5D4037;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.1;
+        }
+
+        .target-cancel-btn {
+            background: #10B981;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+            transition: transform 0.15s;
+        }
+
+        .target-cancel-btn:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes targetPulse {
+            0% { transform: translateX(-50%) scale(1); }
+            100% { transform: translateX(-50%) scale(1.04); box-shadow: 0 8px 22px rgba(16, 185, 129, 0.5); }
         }
 
         .target-mode-text {
@@ -535,26 +525,26 @@
     <div id="app-wrapper">
         <div id="top-panel">
             <div class="solid-panel score-box" id="score-box">
-                <span style="font-size:14px; margin-bottom:2px;">Счет: </span> <span id="score-val">0</span>
+                <span id="i18n-score" style="font-size:14px; margin-bottom:2px;">Счет: </span> <span id="score-val">0</span>
             </div>
             
+            <!-- Центральный блок кнопок: Настройки и Бустер -->
             <div class="center-controls">
-                <button class="solid-panel btn-ctrl" onclick="openSettings(event)" title="Настройки">
+                <button class="solid-panel btn-ctrl" onclick="openSettings(event)" title="Settings">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3"></circle>
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                     </svg>
                 </button>
 
-                <!-- Автономный бустер: 1 раз за игру -->
-                <button id="btn-undo-booster" class="solid-panel btn-ctrl booster-btn" onclick="useFreeBooster(event)" title="Убрать котика (1 раз за игру)">
+                <button id="btn-undo-booster" class="solid-panel btn-ctrl booster-btn" onclick="removeTopCatWithAd(event)" title="Убрать котика">
                     <span class="booster-icon">🧹</span>
-                    <span id="booster-badge-count" class="booster-badge">1/1</span>
+                    <span class="booster-badge">AD</span>
                 </button>
             </div>
 
             <div class="solid-panel next-box-container">
-                <div class="next-label">След.</div>
+                <div class="next-label" id="i18n-next">След.</div>
                 <div class="next-img-wrapper">
                     <img id="next-item-img" src="" alt="Next Cat">
                 </div>
@@ -562,9 +552,10 @@
         </div>
 
         <div id="game-container">
+            <!-- Баннер режима прицельного удаления котика -->
             <div id="target-mode-banner" style="display: none;">
-                <span class="target-mode-text" id="target-prompt-text">Коснись котика (ур. 1–4)</span>
-                <button class="target-cancel-btn" onclick="cancelTargetMode(event)" title="Отмена">✕</button>
+                <span class="target-mode-text" id="i18n-target-prompt">Убери до 3 котиков (осталось: 3)</span>
+                <button class="target-cancel-btn" id="target-action-btn" onclick="cancelTargetMode(event)" title="Готово">✓</button>
             </div>
 
             <div id="canvas-wrapper"></div>
@@ -576,51 +567,179 @@
             <!-- Settings / Pause Menu -->
             <div id="settings-modal" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Пауза</h2>
-                    <button class="menu-btn btn-primary" onclick="closeSettings(event)">Продолжить</button>
+                    <h2 id="i18n-pause-title">Пауза</h2>
+                    <button class="menu-btn btn-primary" id="i18n-continue" onclick="closeSettings(event)">Продолжить</button>
                     <button class="menu-btn btn-secondary" id="btn-sound" onclick="toggleSound()">Звук: Вкл</button>
-                    <button class="menu-btn btn-secondary" onclick="resetGameWrapper(event)">Начать заново</button>
-                    <button class="menu-btn btn-accent" onclick="showLeaderboard()">Таблица рекордов</button>
+                    <button class="menu-btn btn-secondary" id="i18n-restart" onclick="resetGameWrapper(event)">Начать заново</button>
+                    <button class="menu-btn btn-accent" id="i18n-leaderboard" onclick="showLeaderboard()">Таблица рекордов</button>
                 </div>
             </div>
             
             <!-- Leaderboard Menu -->
             <div id="leaderboard-modal" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Таблица рекордов</h2>
-                    <div class="player-input-box">
-                        <input type="text" id="player-nickname" placeholder="Твое имя / ник" maxlength="14" value="Игрок">
-                        <button class="menu-btn btn-primary btn-save-score" onclick="saveCurrentScoreToLeaderboard()">Сохранить</button>
-                    </div>
+                    <h2 id="i18n-leaderboard-title">Таблица рекордов</h2>
                     <div id="leaderboard-list" class="leaderboard-list"></div>
-                    <button class="menu-btn btn-secondary" onclick="closeLeaderboard()">Закрыть</button>
+                    <button class="menu-btn btn-primary" id="i18n-close-lb" onclick="closeLeaderboard()">Закрыть</button>
                 </div>
             </div>
 
             <!-- Game Over Menu -->
             <div id="game-over-screen" class="modal-overlay">
                 <div class="menu-content">
-                    <h2>Игра окончена!</h2>
-                    <p style="font-size: 19px; margin: 4px 0 12px 0; color: #5D4037;">
-                        Итоговый счет: <span id="final-score" style="font-weight: bold; color: #D35400;">0</span>
+                    <h2 id="i18n-gameover-title">Игра окончена!</h2>
+                    <p style="font-size: 20px; margin-bottom: 10px; color: #5D4037;">
+                        <span id="i18n-final-score">Итоговый счет: </span> <span id="final-score" style="font-weight: bold; color: #D35400;">0</span>
                     </p>
-                    <button class="menu-btn btn-reward" id="btn-free-rescue" onclick="useFreeRescue(event)">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <button class="menu-btn btn-reward" id="btn-reward-save" onclick="rescueWithAd(event)">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="5 3 19 12 5 21 5 3"></polygon>
                         </svg>
-                        <span>Спастись (1/1)</span>
+                        <span id="i18n-save">Спастись (Реклама)</span>
                     </button>
-                    <button class="menu-btn btn-accent" onclick="openLeaderboardFromGameOver(event)">Таблица рекордов</button>
-                    <button class="menu-btn btn-primary" onclick="resetGameWrapper(event)">Играть еще</button>
+                    <button class="menu-btn btn-primary" id="i18n-play-again" onclick="resetGameWrapper(event)">Играть еще</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        const translations = {
+            ru: {
+                score: "Счет: ",
+                next: "След.",
+                pause_title: "ПАУЗА",
+                continue: "ПРОДОЛЖИТЬ",
+                sound_on: "ЗВУК: ВКЛ",
+                sound_off: "ЗВУК: ВЫКЛ",
+                restart: "НАЧАТЬ ЗАНОВО",
+                leaderboard: "ТАБЛИЦА РЕКОРДОВ",
+                leaderboard_title: "РЕКОРДЫ",
+                gameover_title: "ИГРА ОКОНЧЕНА!",
+                final_score: "Итоговый счет: ",
+                play_again: "ИГРАТЬ ЕЩЕ",
+                loading: "Загрузка...",
+                anonymous: "Аноним",
+                close: "ЗАКРЫТЬ",
+                lb_empty: "Нет данных",
+                lb_error: "Ошибка загрузки данных",
+                save: "СПАСТИСЬ (ВИДЕО)",
+                undo_title: "Убрать котика (Реклама)",
+                target_prompt: "Убери до 3 котиков (осталось: 3)",
+                target_empty: "Нет подходящих котиков (ур. 1-4)!"
+            },
+            en: {
+                score: "Score: ",
+                next: "Next",
+                pause_title: "PAUSE",
+                continue: "CONTINUE",
+                sound_on: "SOUND: ON",
+                sound_off: "SOUND: OFF",
+                restart: "RESTART",
+                leaderboard: "LEADERBOARD",
+                leaderboard_title: "TOP SCORES",
+                gameover_title: "GAME OVER!",
+                final_score: "Final Score: ",
+                play_again: "PLAY AGAIN",
+                loading: "Loading...",
+                anonymous: "Anonymous",
+                close: "CLOSE",
+                lb_empty: "No data",
+                lb_error: "Failed to load data",
+                save: "RESCUE (AD)",
+                undo_title: "Remove cat (Rewarded Ad)",
+                target_prompt: "Remove up to 3 cats (3 left)",
+                target_empty: "No eligible cats (lv. 1-4)!"
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            
+            document.getElementById('i18n-score').innerText = t.score;
+            document.getElementById('i18n-next').innerText = t.next;
+            document.getElementById('i18n-pause-title').innerText = t.pause_title;
+            document.getElementById('i18n-continue').innerText = t.continue;
+            document.getElementById('i18n-restart').innerText = t.restart;
+            document.getElementById('i18n-leaderboard').innerText = t.leaderboard;
+            document.getElementById('i18n-leaderboard-title').innerText = t.leaderboard_title;
+            document.getElementById('i18n-gameover-title').innerText = t.gameover_title;
+            document.getElementById('i18n-final-score').innerText = t.final_score;
+            document.getElementById('i18n-play-again').innerText = t.play_again;
+            document.getElementById('i18n-close-lb').innerText = t.close;
+            document.getElementById('i18n-save').innerText = t.save;
+            
+            const promptEl = document.getElementById('i18n-target-prompt');
+            if (promptEl) promptEl.innerText = t.target_prompt;
+
+            const undoBtn = document.getElementById('btn-undo-booster');
+            if (undoBtn) undoBtn.title = t.undo_title;
+            
+            const soundBtn = document.getElementById('btn-sound');
+            soundBtn.innerText = isMuted ? t.sound_off : t.sound_on;
+        }
+
+        let ysdk = null;
+        let ysdkLeaderboard = null;
+        let ysdkPlayer = null;
+        let isGameReadyNotified = false;
+        let restartCount = 0;
+        let hasRevivedThisGame = false;
+
+        function notifyLoadingReady() {
+            if (!isGameReadyNotified && ysdk && ysdk.features && ysdk.features.LoadingAPI) {
+                ysdk.features.LoadingAPI.ready();
+                isGameReadyNotified = true;
+                console.log('Yandex Games LoadingAPI.ready() вызван успешно');
+            }
+        }
+
+        function initYandex() {
+            if (typeof YaGames !== 'undefined') {
+                YaGames.init().then(_ysdk => {
+                    ysdk = _ysdk;
+                    let envLang = ysdk.environment.i18n.lang;
+                    
+                    if (['ru', 'be', 'kk', 'uk', 'uz'].includes(envLang)) {
+                        setLanguage('ru');
+                    } else {
+                        setLanguage('en');
+                    }
+
+                    if (ysdk.getPlayer) {
+                        ysdk.getPlayer({ scopes: false })
+                            .then(_player => {
+                                ysdkPlayer = _player;
+                            })
+                            .catch(err => {
+                                console.log('Гостевой режим игрока:', err);
+                            });
+                    }
+
+                    ysdk.getLeaderboards()
+                        .then(_lb => {
+                            ysdkLeaderboard = _lb;
+                        })
+                        .catch(err => {
+                            console.error("Leaderboard SDK init error:", err);
+                        });
+
+                    notifyLoadingReady();
+                }).catch(err => {
+                    console.error('Yandex SDK Init failed:', err);
+                    setLanguage('ru');
+                });
+            } else {
+                setLanguage('ru'); 
+            }
+        }
+
         const GAME_WIDTH = 370;
         const GAME_HEIGHT = 700; 
-        const FLOOR_OFFSET = 2;
+        const FLOOR_OFFSET = 1;
         const FLOOR_Y = GAME_HEIGHT - FLOOR_OFFSET;
         
         const CAT_LEVELS = [
@@ -639,21 +758,6 @@
 
         const mergeScores = [0, 0, 10, 30, 60, 100, 150, 210, 280, 360, 450, 550];
 
-        // Локальная таблица рекордов для друзей (хранится в памяти сессии)
-        let localLeaderboard = [
-            { name: "Барсик 👑", score: 3240 },
-            { name: "Мурзик", score: 2850 },
-            { name: "Симба", score: 2310 },
-            { name: "Котофей", score: 1980 },
-            { name: "Люцифер", score: 1520 },
-            { name: "Булочка", score: 1200 },
-            { name: "Зефирка", score: 860 }
-        ];
-
-        let currentPlayerName = "Игрок";
-        let hasSavedCurrentRun = false;
-
-        // Физический движок Matter.js
         const Engine = Matter.Engine,
               Render = Matter.Render,
               Runner = Matter.Runner,
@@ -687,15 +791,13 @@
 
         let comboCount = 0;
         let lastMergeTime = 0;
-
-        // Ограничения автономных бонусов (1 раз за игровую сессию)
-        let hasUsedBoosterThisGame = false;
-        let hasRevivedThisGame = false;
-        let isTargetModeActive = false;
+        let isTargetModeActive = false; // Режим прицельного выбора котика
+        let targetRemovalsLeft = 3;     // До 3 удалений котиков
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffers = {};
         let isMuted = false;
+        let isAudioSuspendedForAd = false;
         
         const audioPaths = {
             drop: './assets/drop.mp3',
@@ -709,17 +811,18 @@
                 try {
                     const response = await fetch(path);
                     if (!response.ok) throw new Error(`HTTP status: ${response.status}`);
+                    
                     const arrayBuffer = await response.arrayBuffer();
                     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                     audioBuffers[name] = audioBuffer;
                 } catch (error) {
-                    console.log(`[Звук ${name}]: загрузка не выполнена или оффлайн`);
+                    console.error(`[Audio Error] Ошибка загрузки звука ${name}:`, error);
                 }
             }
         }
 
         function unlockAudio() {
-            if (audioCtx && audioCtx.state === 'suspended') {
+            if (audioCtx && audioCtx.state === 'suspended' && !isAudioSuspendedForAd) {
                 audioCtx.resume();
             }
         }
@@ -730,6 +833,7 @@
 
         function playSound(name, volumeMultiplier = 1.0, playbackRate = 1.0) {
             if (isMuted || !audioCtx || !audioBuffers[name]) return;
+            
             try {
                 const source = audioCtx.createBufferSource();
                 source.buffer = audioBuffers[name];
@@ -742,7 +846,7 @@
                 gainNode.connect(audioCtx.destination);
                 source.start(0);
             } catch (err) {
-                console.error(err);
+                console.error(`[Audio Play Error]:`, err);
             }
         }
 
@@ -774,6 +878,7 @@
 
         function init() {
             setupPhysicsWorld();
+
             resizeApp();
             window.addEventListener('resize', resizeApp);
 
@@ -784,7 +889,6 @@
 
             rollNextCat();
             spawnDropper(); 
-            renderLeaderboardUI();
         }
 
         function setupPhysicsWorld() {
@@ -934,6 +1038,7 @@
                     if (e.target.closest('#top-panel') || e.target.closest('.modal-overlay') || e.target.closest('.booster-btn') || e.target.closest('#target-mode-banner')) return;
                 }
 
+                // Обработка клика в режиме прицельного удаления котика (уровни 0-3)
                 if (isTargetModeActive) {
                     const coords = getCanvasCoords(e);
                     const clickedCat = findTargetCatAt(coords.x, coords.y);
@@ -1018,8 +1123,10 @@
             });
             
             Matter.Body.setMass(body, 10);
+            
             body.createdAt = Date.now(); 
             body.hasCollided = false; 
+            
             return body;
         }
 
@@ -1042,6 +1149,7 @@
                     
                     if (bodyA.label === bodyB.label && !isNaN(parseInt(bodyA.label))) {
                         const level = parseInt(bodyA.label);
+                        
                         if (bodiesToRemove.includes(bodyA) || bodiesToRemove.includes(bodyB)) continue;
 
                         const midX = (bodyA.position.x + bodyB.position.x) / 2;
@@ -1112,7 +1220,9 @@
             const scoreBox = document.getElementById('score-box');
             
             scoreEl.innerText = currentScore;
+            
             scoreBox.classList.add('score-pop');
+            
             setTimeout(() => {
                 scoreBox.classList.remove('score-pop');
             }, 150);
@@ -1121,23 +1231,28 @@
         function setupGameLoop() {
             Events.on(engine, 'beforeUpdate', function() {
                 if (isGameOver) return;
+
                 const now = Date.now();
                 
                 for (let i = mergeAnimations.length - 1; i >= 0; i--) {
                     const anim = mergeAnimations[i];
                     if (now - anim.startTime >= anim.duration) {
+                        
                         if (anim.newLevel !== null) {
                             const newCat = createCatBody(anim.midX, anim.midY, anim.newLevel, false, anim.targetAngle);
                             newCat.isMergeResult = true; 
                             newCat.createdAt = now;
+                            
                             if (anim.targetAngularVelocity) {
                                 Matter.Body.setAngularVelocity(newCat, anim.targetAngularVelocity);
                             }
+                            
                             Composite.add(engine.world, newCat);
                         }
                         
                         updateScore(anim.points);
                         createMergeExplosion(anim.midX, anim.midY, anim.isMax);
+                        
                         mergeAnimations.splice(i, 1);
                     }
                 }
@@ -1167,6 +1282,7 @@
                     } else {
                         const timeElapsed = Date.now() - warningStartTime;
                         const timeLeft = Math.ceil((3000 - timeElapsed) / 1000);
+                        
                         if (timeLeft <= 0) {
                             triggerGameOver();
                         } else {
@@ -1184,28 +1300,61 @@
 
         function triggerGameOver() {
             isGameOver = true;
-            hasSavedCurrentRun = false;
             document.getElementById('warning-screen').style.display = 'none';
             Matter.Runner.stop(runner);
+            
             playSound('gameover'); 
             
             document.getElementById('final-score').innerText = currentScore;
             
-            const btnSave = document.getElementById('btn-free-rescue');
+            const btnSave = document.getElementById('btn-reward-save');
             if (!hasRevivedThisGame) {
                 btnSave.style.display = 'flex';
-                btnSave.disabled = false;
             } else {
                 btnSave.style.display = 'none';
             }
             
             document.getElementById('game-over-screen').style.display = 'flex';
+            
+            if (ysdk && ysdkLeaderboard) {
+                ysdkLeaderboard.setLeaderboardScore('topscores', currentScore)
+                    .then(() => console.log('Score saved'))
+                    .catch(err => console.warn('Предупреждение сохранения очков (гость или оффлайн):', err));
+            }
         }
 
-        function useFreeRescue(event) {
+        // --- Rewarded Реклама 1: Спасение на экране Game Over ---
+        function rescueWithAd(event) {
             if (event) event.stopPropagation();
-            if (hasRevivedThisGame) return;
+            
+            // Если SDK недоступен (локальное тестирование на ПК), сразу выполняем действие для проверки
+            if (!ysdk || !ysdk.adv) {
+                console.log("Реклама не поддерживается на локальном хосте — выполняем спасение для теста");
+                resumeAfterSave();
+                return;
+            }
+            
+            ysdk.adv.showRewardedVideo({
+                callbacks: {
+                    onOpen: () => {
+                        isAudioSuspendedForAd = true;
+                        if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                    },
+                    onRewarded: () => {
+                        resumeAfterSave();
+                    },
+                    onClose: () => {
+                        isAudioSuspendedForAd = false;
+                        if (!isMuted && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                    },
+                    onError: (e) => {
+                        console.log('Ошибка rewarded рекламы', e);
+                    }
+                }
+            });
+        }
 
+        function resumeAfterSave() {
             hasRevivedThisGame = true;
             isGameOver = false;
             document.getElementById('game-over-screen').style.display = 'none';
@@ -1222,6 +1371,7 @@
             }
             
             Composite.remove(engine.world, bodiesToRemove);
+            
             activeDropper = null;
             canDrop = true;
             isWarningActive = false;
@@ -1233,10 +1383,12 @@
             spawnDropper();
         }
 
-        function useFreeBooster(event) {
+        // --- Rewarded Реклама 2: Прицельный бустер «Кошачья лапка» (ур. 0–3) ---
+        function removeTopCatWithAd(event) {
             if (event) event.stopPropagation();
-            if (isGameOver || isPaused || isTargetModeActive || hasUsedBoosterThisGame) return;
+            if (isGameOver || isPaused || isTargetModeActive) return;
 
+            // Проверяем, есть ли на поле подходящие котики (уровни 0, 1, 2, 3)
             const bodies = Composite.allBodies(engine.world);
             let hasEligibleCats = false;
             for (let b of bodies) {
@@ -1250,18 +1402,58 @@
             }
             
             if (!hasEligibleCats) {
-                alertPromptBanner("Нет подходящих котиков (ур. 1-4)!");
+                const t = translations[currentLang];
+                alertPromptBanner(t.target_empty);
                 return;
             }
 
-            enableTargetMode();
+            // Локальный режим без SDK (сразу активируем режим прицеливания)
+            if (!ysdk || !ysdk.adv) {
+                console.log("Реклама не поддерживается локально — включаем выбор котика для теста");
+                enableTargetMode();
+                return;
+            }
+
+            ysdk.adv.showRewardedVideo({
+                callbacks: {
+                    onOpen: () => {
+                        isAudioSuspendedForAd = true;
+                        if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                        if (runner) runner.enabled = false;
+                    },
+                    onRewarded: () => {
+                        enableTargetMode();
+                    },
+                    onClose: () => {
+                        isAudioSuspendedForAd = false;
+                        if (!isMuted && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                        if (runner && !isGameOver && !isPaused) runner.enabled = true;
+                    },
+                    onError: (e) => {
+                        console.log('Ошибка rewarded рекламы бустера', e);
+                        if (runner && !isGameOver && !isPaused) runner.enabled = true;
+                    }
+                }
+            });
         }
 
         function enableTargetMode() {
+            targetRemovalsLeft = 3;
             isTargetModeActive = true;
+            updateTargetBannerText();
             document.getElementById('target-mode-banner').style.display = 'flex';
             const btn = document.getElementById('btn-undo-booster');
             if (btn) btn.style.display = 'none';
+        }
+
+        function updateTargetBannerText() {
+            const textEl = document.getElementById('i18n-target-prompt');
+            if (!textEl) return;
+            if (currentLang === 'ru') {
+                textEl.innerText = `Убери до 3 котиков (осталось: ${targetRemovalsLeft})`;
+            } else {
+                textEl.innerText = `Remove up to 3 cats (${targetRemovalsLeft} left)`;
+            }
         }
 
         function cancelTargetMode(event) {
@@ -1274,8 +1466,8 @@
 
         function alertPromptBanner(text) {
             const banner = document.getElementById('target-mode-banner');
-            const textEl = document.getElementById('target-prompt-text');
-            const originalText = "Коснись котика (ур. 1–4)";
+            const textEl = document.getElementById('i18n-target-prompt');
+            const originalText = translations[currentLang].target_prompt;
             textEl.innerText = text;
             banner.style.display = 'flex';
             setTimeout(() => {
@@ -1296,6 +1488,7 @@
                 if (b.isStatic || b === activeDropper || isNaN(parseInt(b.label))) continue;
 
                 const lvl = parseInt(b.label);
+                // Ограничение: удалять можно только котиков с 0 по 3 уровень
                 if (lvl > 3) continue;
 
                 const r = CAT_LEVELS[lvl].radius;
@@ -1303,6 +1496,7 @@
                 const dy = b.position.y - clickY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
+                // Даём небольшой допуск в 6px для удобного тапа пальцем
                 if (dist <= (r + 6) && dist < minDistance) {
                     minDistance = dist;
                     target = b;
@@ -1320,23 +1514,37 @@
             isWarningActive = false;
             document.getElementById('warning-screen').style.display = 'none';
 
-            hasUsedBoosterThisGame = true;
-            const badge = document.getElementById('booster-badge-count');
-            const boosterBtn = document.getElementById('btn-undo-booster');
-            if (badge) {
-                badge.innerText = "0/1";
-                badge.classList.add('used');
-            }
-            if (boosterBtn) {
-                boosterBtn.classList.add('disabled');
+            targetRemovalsLeft--;
+
+            if (targetRemovalsLeft <= 0) {
+                cancelTargetMode();
+                return;
             }
 
-            cancelTargetMode();
+            // Проверяем, остались ли ещё подходящие котики (уровни 0-3)
+            const bodies = Composite.allBodies(engine.world);
+            let hasRemaining = false;
+            for (let b of bodies) {
+                if (!b.isStatic && b !== activeDropper && !isNaN(parseInt(b.label))) {
+                    const lvl = parseInt(b.label);
+                    if (lvl >= 0 && lvl <= 3) {
+                        hasRemaining = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasRemaining) {
+                cancelTargetMode();
+            } else {
+                updateTargetBannerText();
+            }
         }
 
         function customRender() {
             const ctx = render.context;
             const now = Date.now();
+
             const bodies = Composite.allBodies(engine.world);
 
             let highestCatTopY = GAME_HEIGHT;
@@ -1344,6 +1552,7 @@
             for (let i = 0; i < bodies.length; i++) {
                 const b = bodies[i];
                 if (b.isStatic || b === activeDropper || isNaN(parseInt(b.label))) continue;
+
                 if (!b.hasCollided || (now - (b.createdAt || 0) < 1200 && b.speed > 1.0)) continue;
 
                 const r = CAT_LEVELS[parseInt(b.label)].radius;
@@ -1358,6 +1567,7 @@
 
             if (distToLine < dangerZoneHeight) {
                 const lineOpacity = Math.max(0, Math.min(1, 1 - (distToLine / dangerZoneHeight)));
+                
                 if (lineOpacity > 0.03) {
                     ctx.save();
                     ctx.beginPath();
@@ -1376,11 +1586,13 @@
                 }
             }
             
+            // Направляющая линия отрисовывается только когда не активен режим прицела
             if (activeDropper && canDrop && !isGameOver && !isPaused && !isTargetModeActive) {
                 const data = CAT_LEVELS[activeDropper.label];
                 const catRadius = data.radius;
                 const guideX = activeDropper.position.x;
                 const startY = activeDropper.position.y + catRadius;
+                
                 let landingCenterY = FLOOR_Y - catRadius;
                 
                 for (let i = 0; i < bodies.length; i++) {
@@ -1450,25 +1662,52 @@
                         
                         const aspectRatio = data.img.width / data.img.height;
                         const renderScale = data.renderScale; 
+                        
                         const drawHeight = data.radius * 2 * renderScale * popScale;
                         const drawWidth = drawHeight * aspectRatio;
                         
                         ctx.drawImage(data.img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+                        ctx.restore();
+                    }
+                }
+            }
 
-                        if (isTargetModeActive && body !== activeDropper && !body.isStatic && parseInt(body.label) <= 3) {
-                            const pulse = 1 + Math.sin(now / 150) * 0.08;
-                            ctx.beginPath();
-                            ctx.arc(0, 0, data.radius * pulse + 3, 0, Math.PI * 2);
-                            ctx.strokeStyle = '#10B981';
-                            ctx.lineWidth = 3;
-                            ctx.setLineDash([6, 6]);
-                            ctx.stroke();
-                            ctx.setLineDash([]);
-                        }
+            // Доминантный рендер пульсирующих контуров поверх котиков, пола и стен
+            if (isTargetModeActive) {
+                ctx.save();
+                for (let body of bodies) {
+                    if (body !== activeDropper && !body.isStatic && !isNaN(parseInt(body.label)) && parseInt(body.label) <= 3) {
+                        const data = CAT_LEVELS[body.label];
+                        const pulse = 1 + Math.sin(now / 140) * 0.09;
+                        const r = data.radius * pulse + 3;
+
+                        ctx.save();
+                        ctx.translate(body.position.x, body.position.y);
+                        
+                        // Яркое внешнее неоновое изумрудное свечение
+                        ctx.shadowColor = '#10B981';
+                        ctx.shadowBlur = 12;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, r, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#10B981';
+                        ctx.lineWidth = 3.5;
+                        ctx.setLineDash([7, 5]);
+                        ctx.lineCap = 'round';
+                        ctx.stroke();
+
+                        // Контрастный белый внутренний пунктир
+                        ctx.shadowBlur = 0;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, r, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([7, 5]);
+                        ctx.stroke();
 
                         ctx.restore();
                     }
                 }
+                ctx.restore();
             }
 
             for (let anim of mergeAnimations) {
@@ -1489,6 +1728,7 @@
                     const shrinkScale = 1 - (0.4 * t); 
                     const aspectRatio = data.img.width / data.img.height;
                     const renderScale = data.renderScale; 
+                    
                     const drawHeight = data.radius * 2 * renderScale * shrinkScale;
                     const drawWidth = drawHeight * aspectRatio;
                     
@@ -1532,6 +1772,7 @@
                 const dist = (40 + Math.random() * 40) * distanceMult;
                 star.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
                 star.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+                
                 canvasWrapper.appendChild(star);
                 
                 setTimeout(() => {
@@ -1576,11 +1817,39 @@
         function toggleSound() {
             isMuted = !isMuted;
             const btn = document.getElementById('btn-sound');
-            btn.innerText = isMuted ? "Звук: Выкл" : "Звук: Вкл";
+            const t = translations[currentLang];
+            btn.innerText = isMuted ? t.sound_off : t.sound_on;
         }
 
         function resetGameWrapper(e) {
-            executeReset(e);
+            if (ysdk && ysdk.adv) {
+                restartCount++;
+                if (restartCount % 3 === 0) {
+                    ysdk.adv.showFullscreenAdv({
+                        callbacks: {
+                            onOpen: () => {
+                                isAudioSuspendedForAd = true;
+                                if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                                if (runner) runner.enabled = false;
+                            },
+                            onClose: (wasShown) => {
+                                isAudioSuspendedForAd = false;
+                                if (!isMuted && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                                executeReset(e); 
+                            },
+                            onError: (error) => {
+                                isAudioSuspendedForAd = false;
+                                if (!isMuted && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                                executeReset(e);
+                            }
+                        }
+                    });
+                } else {
+                    executeReset(e);
+                }
+            } else {
+                executeReset(e);
+            }
         }
 
         function executeReset(e) {
@@ -1588,21 +1857,10 @@
             
             isGameOver = false;
             hasRevivedThisGame = false;
-            hasUsedBoosterThisGame = false;
-            hasSavedCurrentRun = false;
             isTargetModeActive = false;
-            
             document.getElementById('target-mode-banner').style.display = 'none';
             const boosterBtn = document.getElementById('btn-undo-booster');
-            const boosterBadge = document.getElementById('booster-badge-count');
-            if (boosterBtn) {
-                boosterBtn.style.display = 'flex';
-                boosterBtn.classList.remove('disabled');
-            }
-            if (boosterBadge) {
-                boosterBadge.innerText = "1/1";
-                boosterBadge.classList.remove('used');
-            }
+            if (boosterBtn) boosterBtn.style.display = 'flex';
             
             document.getElementById('settings-modal').style.display = 'none';
             document.getElementById('game-over-screen').style.display = 'none';
@@ -1642,87 +1900,65 @@
             isSpawnDelayed = false; 
             
             setupPhysicsWorld();
+
             rollNextCat();
             spawnDropper();
-        }
-
-        function renderLeaderboardUI() {
-            const listContainer = document.getElementById('leaderboard-list');
-            if (!listContainer) return;
-
-            localLeaderboard.sort((a, b) => b.score - a.score);
-            let top10 = localLeaderboard.slice(0, 10);
-
-            let html = '';
-            top10.forEach((entry, index) => {
-                const rank = index + 1;
-                let rankClass = 'rank-normal';
-                if (rank <= 3) {
-                    rankClass = 'rank-rainbow';
-                } else if (rank <= 5) {
-                    rankClass = 'rank-colored';
-                }
-                
-                const isCurrentPlayer = entry.name.startsWith(currentPlayerName);
-                const itemClass = isCurrentPlayer ? 'leaderboard-item is-player' : 'leaderboard-item';
-
-                html += `
-                    <div class="${itemClass}">
-                        <span class="rank-name ${rankClass}">${rank}. ${entry.name}</span>
-                        <span class="${rankClass}">${entry.score}</span>
-                    </div>
-                `;
-            });
-
-            listContainer.innerHTML = html;
-        }
-
-        function saveCurrentScoreToLeaderboard() {
-            const nameInput = document.getElementById('player-nickname');
-            let name = nameInput.value.trim() || "Игрок";
-            currentPlayerName = name;
-
-            if (currentScore > 0 && !hasSavedCurrentRun) {
-                localLeaderboard.push({ name: name, score: currentScore });
-                hasSavedCurrentRun = true;
-            }
-            renderLeaderboardUI();
         }
 
         function showLeaderboard() {
             document.getElementById('settings-modal').style.display = 'none';
             document.getElementById('leaderboard-modal').style.display = 'flex';
-            renderLeaderboardUI();
-        }
-
-        function openLeaderboardFromGameOver(e) {
-            if (e) e.stopPropagation();
-            const nameInput = document.getElementById('player-nickname');
-            nameInput.value = currentPlayerName;
             
-            if (currentScore > 0 && !hasSavedCurrentRun) {
-                localLeaderboard.push({ name: currentPlayerName, score: currentScore });
-                hasSavedCurrentRun = true;
-            }
+            const listContainer = document.getElementById('leaderboard-list');
+            const t = translations[currentLang];
+            
+            listContainer.innerHTML = `<div style="text-align:center; padding: 20px; font-weight: bold; color: #5D4037;">${t.loading}</div>`;
 
-            document.getElementById('game-over-screen').style.display = 'none';
-            document.getElementById('leaderboard-modal').style.display = 'flex';
-            renderLeaderboardUI();
+            if (ysdkLeaderboard) {
+                ysdkLeaderboard.getLeaderboardEntries('topscores', { quantityTop: 10 })
+                    .then(res => {
+                        let html = '';
+                        if (res.entries.length === 0) {
+                            html = `<div style="text-align:center; padding: 20px; color: #5D4037;">${t.lb_empty}</div>`;
+                        } else {
+                            res.entries.forEach((entry, index) => {
+                                let name = entry.player.publicName || t.anonymous;
+                                let rankClass = 'rank-normal';
+                                
+                                if (entry.rank >= 1 && entry.rank <= 3) {
+                                    rankClass = 'rank-rainbow';
+                                } else if (entry.rank === 4 || entry.rank === 5) {
+                                    rankClass = 'rank-colored';
+                                }
+                                
+                                html += `<div class="leaderboard-item">
+                                    <span class="rank-name ${rankClass}">${entry.rank}. ${name}</span>
+                                    <span class="${rankClass}">${entry.score}</span>
+                                </div>`;
+                            });
+                        }
+                        listContainer.innerHTML = html;
+                    })
+                    .catch(err => {
+                        console.error("Leaderboard load error:", err);
+                        listContainer.innerHTML = `<div style="text-align:center; padding: 20px; color: #D35400;">${t.lb_error}</div>`;
+                    });
+            } else {
+                listContainer.innerHTML = `<div style="text-align:center; padding: 20px; color: #5D4037;">SDK не инициализирован</div>`;
+            }
         }
 
         function closeLeaderboard() {
             document.getElementById('leaderboard-modal').style.display = 'none';
-            if (isGameOver) {
-                document.getElementById('game-over-screen').style.display = 'flex';
-            } else if (isPaused) {
-                document.getElementById('settings-modal').style.display = 'flex'; 
-            }
+            document.getElementById('settings-modal').style.display = 'flex'; 
         }
 
         window.onload = async () => {
+            initYandex(); 
             await preloadAudio();
             preloadImages(() => {
                 init();
+                notifyLoadingReady();
             });
         };
     </script>
