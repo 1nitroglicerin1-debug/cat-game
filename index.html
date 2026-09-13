@@ -6,7 +6,7 @@
     <title>Cat Suika Game - Standalone Edition</title>
     
     <!-- Matter.js Physics Engine -->
-    <script src="assets/matter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     
     <style>
         * {
@@ -184,13 +184,11 @@
             height: 700px;
             box-sizing: content-box;
             margin: 0 auto; 
-            
             border-left: 18px solid #8C6239;
             border-right: 18px solid #8C6239;
             border-bottom: 18px solid #8C6239;
             border-top: none;
             border-radius: 0; 
-            
             box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5), 0 10px 20px rgba(0, 0, 0, 0.3); 
         }
 
@@ -764,7 +762,6 @@
         const FLOOR_OFFSET = 1;
         const FLOOR_Y = GAME_HEIGHT - FLOOR_OFFSET;
         
-        // Ограничение DPR потолком в 2.0 для устранения перегрузки GPU на Retina-экранах iPhone
         const APP_DPR = Math.min(window.devicePixelRatio || 1, 2);
         
         const CAT_LEVELS = [
@@ -855,7 +852,7 @@
                     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                     audioBuffers[name] = audioBuffer;
                 } catch (error) {
-                    console.log(`[Звук ${name}]: загрузка не выполнена или оффлайн`);
+                    // Оффлайн/заглушка звуков
                 }
             }
         }
@@ -930,12 +927,12 @@
         }
 
         function setupPhysicsWorld() {
+            // ВАЖНО: enableSleeping = false полностью исключает зависание котиков в небе!
             engine = Engine.create({
-                enableSleeping: true
+                enableSleeping: false
             });
             engine.world.gravity.y = 1.8; 
             
-            // Повышенная точность для предотвращения проваливаний
             engine.positionIterations = 16; 
             engine.velocityIterations = 12;
 
@@ -1000,7 +997,6 @@
 
             Render.run(render);
 
-            // СОБСТВЕННЫЙ ФИКСИРОВАННЫЙ ЦИКЛ (Устраняет слоу-мо на iPhone)
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             
             let lastTime = performance.now();
@@ -1011,12 +1007,9 @@
                 
                 if (!isGameOver && !isPaused) {
                     let delta = currentTime - lastTime;
-                    if (delta > 200) delta = 200; // защита от долгих пауз вкладки
+                    if (delta > 200) delta = 200;
                     
-                    // Шаг физики на фиксированный интервал, независимо от FPS Safari
                     Engine.update(engine, fixedDelta);
-                    
-                    // Обновление логики игры
                     updateGameLogic();
                 }
                 lastTime = currentTime;
@@ -1028,12 +1021,12 @@
 
         function setupInput() {
             const getXPos = (e) => {
-                const canvasEl = render.canvas;
+                const canvasEl = render ? render.canvas : null;
                 if (!canvasEl) return lastInputX;
                 const rect = canvasEl.getBoundingClientRect();
                 
                 let clientX;
-                if (e.type.includes('touch')) {
+                if (e.type && e.type.includes('touch')) {
                     if (e.touches && e.touches.length > 0) {
                         clientX = e.touches[0].clientX;
                     } else if (e.changedTouches && e.changedTouches.length > 0) {
@@ -1050,12 +1043,12 @@
             };
 
             const getCanvasCoords = (e) => {
-                const canvasEl = render.canvas;
+                const canvasEl = render ? render.canvas : null;
                 if (!canvasEl) return { x: 0, y: 0 };
                 const rect = canvasEl.getBoundingClientRect();
 
                 let clientX, clientY;
-                if (e.type.includes('touch')) {
+                if (e.type && e.type.includes('touch')) {
                     const t = (e.touches && e.touches.length > 0) ? e.touches[0] : (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : null);
                     if (!t) return { x: 0, y: 0 };
                     clientX = t.clientX;
@@ -1075,8 +1068,7 @@
             };
 
             const handleMove = (e) => {
-                // Обязательно для iOS, чтобы safari не тупил при перетаскивании
-                if (e.cancelable) {
+                if (e.cancelable && e.type && e.type.includes('touch')) {
                     e.preventDefault();
                 }
 
@@ -1121,6 +1113,7 @@
                 canDrop = false;
                 Matter.Body.setStatic(activeDropper, false);
                 activeDropper.isSensor = false;
+                Matter.Body.setVelocity(activeDropper, { x: 0, y: 1 }); // Гарантированный импульс падения
                 
                 playSound('drop', 2.0); 
                 
@@ -1154,10 +1147,16 @@
             else nextCatLevel = 4;                 
 
             const imgEl = document.getElementById('next-item-img');
-            imgEl.src = CAT_LEVELS[nextCatLevel].imgSrc;
+            if (imgEl) imgEl.src = CAT_LEVELS[nextCatLevel].imgSrc;
         }
 
         function spawnDropper() {
+            // Удаляем возможные зависшие дубликаты activeDropper
+            if (activeDropper) {
+                Composite.remove(engine.world, activeDropper);
+                activeDropper = null;
+            }
+
             const data = CAT_LEVELS[nextCatLevel];
             let spawnX = Math.max(data.radius + 2, Math.min(lastInputX, GAME_WIDTH - data.radius - 2));
             activeDropper = createCatBody(spawnX, spawnY, nextCatLevel, true, 0);
@@ -1173,10 +1172,10 @@
                 isSensor: isStatic, 
                 label: levelIndex.toString(),
                 angle: customAngle,
-                restitution: 0.0,      // НУЛЕВАЯ УПРУГОСТЬ исключает прыжки и пружинение
+                restitution: 0.0,      
                 friction: 0.5,         
                 frictionStatic: 1.0,   
-                frictionAir: 0.03,     // Быстрое гашение остаточных колебаний
+                frictionAir: 0.02,     
                 slop: 0.02,            
                 render: { visible: false }
             });
@@ -1275,11 +1274,13 @@
             const scoreEl = document.getElementById('score-val');
             const scoreBox = document.getElementById('score-box');
             
-            scoreEl.innerText = currentScore;
-            scoreBox.classList.add('score-pop');
-            setTimeout(() => {
-                scoreBox.classList.remove('score-pop');
-            }, 150);
+            if (scoreEl) scoreEl.innerText = currentScore;
+            if (scoreBox) {
+                scoreBox.classList.add('score-pop');
+                setTimeout(() => {
+                    scoreBox.classList.remove('score-pop');
+                }, 150);
+            }
         }
 
         function updateGameLogic() {
@@ -1310,11 +1311,11 @@
 
             for (let i = 0; i < bodies.length; i++) {
                 const body = bodies[i];
-                if (body.isStatic || isNaN(parseInt(body.label))) continue;
+                if (body.isStatic || isNaN(parseInt(body.label)) || body === activeDropper) continue;
                 
                 const radius = CAT_LEVELS[parseInt(body.label)].radius;
                 if ((body.position.y - radius * 0.2) < gameOverLineY && (body.speed < 0.5)) {
-                    if (Date.now() - body.createdAt > 1500) {
+                    if (Date.now() - body.createdAt > 1800) {
                         anyBodyOverLine = true;
                         break; 
                     }
@@ -1325,21 +1326,26 @@
                 if (!isWarningActive) {
                     isWarningActive = true;
                     warningStartTime = Date.now();
-                    document.getElementById('warning-screen').style.display = 'flex';
-                    document.getElementById('warning-timer').innerText = '3';
+                    const warningEl = document.getElementById('warning-screen');
+                    const timerEl = document.getElementById('warning-timer');
+                    if (warningEl) warningEl.style.display = 'flex';
+                    if (timerEl) timerEl.innerText = '3';
                 } else {
                     const timeElapsed = Date.now() - warningStartTime;
                     const timeLeft = Math.ceil((3000 - timeElapsed) / 1000);
                     if (timeLeft <= 0) {
                         triggerGameOver();
                     } else {
-                        document.getElementById('warning-timer').innerText = timeLeft;
+                        const timerEl = document.getElementById('warning-timer');
+                        if (timerEl) timerEl.innerText = timeLeft;
                     }
                 }
             } else {
                 if (isWarningActive) {
                     isWarningActive = false;
-                    document.getElementById('warning-screen').style.display = 'none';
+                    warningStartTime = 0;
+                    const warningEl = document.getElementById('warning-screen');
+                    if (warningEl) warningEl.style.display = 'none';
                 }
             }
         }
@@ -1347,48 +1353,110 @@
         function triggerGameOver() {
             isGameOver = true;
             hasSavedCurrentRun = false;
-            document.getElementById('warning-screen').style.display = 'none';
+            const warningEl = document.getElementById('warning-screen');
+            if (warningEl) warningEl.style.display = 'none';
             playSound('gameover'); 
             
-            document.getElementById('final-score').innerText = currentScore;
+            const finalScoreEl = document.getElementById('final-score');
+            if (finalScoreEl) finalScoreEl.innerText = currentScore;
             
             const btnSave = document.getElementById('btn-free-rescue');
-            if (!hasRevivedThisGame) {
-                btnSave.style.display = 'flex';
-                btnSave.disabled = false;
-            } else {
-                btnSave.style.display = 'none';
+            if (btnSave) {
+                if (!hasRevivedThisGame) {
+                    btnSave.style.display = 'flex';
+                    btnSave.disabled = false;
+                } else {
+                    btnSave.style.display = 'none';
+                }
             }
             
-            document.getElementById('game-over-screen').style.display = 'flex';
+            const gameOverEl = document.getElementById('game-over-screen');
+            if (gameOverEl) gameOverEl.style.display = 'flex';
         }
 
         function useFreeRescue(event) {
-            if (event) event.stopPropagation();
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
             if (hasRevivedThisGame) return;
 
             hasRevivedThisGame = true;
             isGameOver = false;
-            document.getElementById('game-over-screen').style.display = 'none';
             
+            // Скрываем экран окончания игры
+            const goEl = document.getElementById('game-over-screen');
+            if (goEl) goEl.style.display = 'none';
+
+            // 1. Очищаем все незавершенные таймеры спавна
+            if (dropTimeoutId) {
+                clearTimeout(dropTimeoutId);
+                dropTimeoutId = null;
+            }
+
+            // 2. Очищаем старый activeDropper из физического мира, если он существовал
+            if (activeDropper) {
+                Composite.remove(engine.world, activeDropper);
+                activeDropper = null;
+            }
+
+            // 3. Сбрасываем флаги предупреждения
+            isWarningActive = false;
+            warningStartTime = 0;
+            const warningEl = document.getElementById('warning-screen');
+            if (warningEl) warningEl.style.display = 'none';
+
+            // 4. Очищаем верхнюю половину стакана
             const bodies = Composite.allBodies(engine.world);
             const bodiesToRemove = [];
-            
+            const rescueClearY = gameOverLineY + 240; // Просторная зона очистки
+
             for (let i = 0; i < bodies.length; i++) {
                 const body = bodies[i];
                 if (body.isStatic || isNaN(parseInt(body.label))) continue;
-                if (body.position.y < (gameOverLineY + 200)) {
+                if (body.position.y < rescueClearY) {
                     bodiesToRemove.push(body);
                 }
             }
-            
+
+            // Если удалилось слишком мало, удаляем как минимум 3 самых верхних котика
+            if (bodiesToRemove.length < 3) {
+                const nonStaticCats = bodies.filter(b => !b.isStatic && !isNaN(parseInt(b.label)));
+                nonStaticCats.sort((a, b) => a.position.y - b.position.y);
+                const toPick = nonStaticCats.slice(0, 3);
+                for (let b of toPick) {
+                    if (!bodiesToRemove.includes(b)) {
+                        bodiesToRemove.push(b);
+                    }
+                }
+            }
+
+            // Создаем взрывы-звездочки на месте убранных котиков
+            for (let b of bodiesToRemove) {
+                createMergeExplosion(b.position.x, b.position.y, false);
+            }
             Composite.remove(engine.world, bodiesToRemove);
-            activeDropper = null;
-            canDrop = true;
-            isWarningActive = false;
-            
+
+            // 5. ВАЖНО: сбрасываем createdAt оставшихся котиков и гарантируем пробуждение физики
+            const now = Date.now();
+            const remainingBodies = Composite.allBodies(engine.world);
+            for (let b of remainingBodies) {
+                if (!b.isStatic && !isNaN(parseInt(b.label))) {
+                    b.createdAt = now + 1500; // Даем 3.3 секунды на полное оседание
+                    Matter.Body.setVelocity(b, { x: 0, y: Math.max(b.velocity.y, 0.5) });
+                }
+            }
+
+            // 6. Блокируем мгновенный случайный сброс от клика по кнопке "Спастись"
+            canDrop = false;
             rollNextCat();
-            spawnDropper();
+            
+            setTimeout(() => {
+                if (!isGameOver && !isPaused) {
+                    spawnDropper();
+                    canDrop = true;
+                }
+            }, 300);
         }
 
         function useFreeBooster(event) {
@@ -1419,7 +1487,8 @@
             targetRemovalsLeft = 3;
             isTargetModeActive = true;
             updateTargetBannerText();
-            document.getElementById('target-mode-banner').style.display = 'flex';
+            const banner = document.getElementById('target-mode-banner');
+            if (banner) banner.style.display = 'flex';
             const overlay = document.getElementById('target-overlay-canvas');
             if (overlay) {
                 overlay.style.display = 'block';
@@ -1441,7 +1510,8 @@
         function cancelTargetMode(event) {
             if (event) event.stopPropagation();
             isTargetModeActive = false;
-            document.getElementById('target-mode-banner').style.display = 'none';
+            const banner = document.getElementById('target-mode-banner');
+            if (banner) banner.style.display = 'none';
             const overlay = document.getElementById('target-overlay-canvas');
             if (overlay) {
                 overlay.style.display = 'none';
@@ -1457,12 +1527,12 @@
             const textEl = document.getElementById('target-prompt-text');
             const t = translations[currentLang];
             const originalText = t.target_prompt.replace('{n}', targetRemovalsLeft);
-            textEl.innerText = text;
-            banner.style.display = 'flex';
+            if (textEl) textEl.innerText = text;
+            if (banner) banner.style.display = 'flex';
             setTimeout(() => {
                 if (!isTargetModeActive) {
-                    banner.style.display = 'none';
-                    textEl.innerText = originalText;
+                    if (banner) banner.style.display = 'none';
+                    if (textEl) textEl.innerText = originalText;
                 }
             }, 1800);
         }
@@ -1499,7 +1569,8 @@
             Composite.remove(engine.world, catBody);
 
             isWarningActive = false;
-            document.getElementById('warning-screen').style.display = 'none';
+            const warningEl = document.getElementById('warning-screen');
+            if (warningEl) warningEl.style.display = 'none';
 
             hasUsedBoosterThisGame = true;
             const badge = document.getElementById('booster-badge-count');
@@ -1539,6 +1610,7 @@
         }
 
         function customRender() {
+            if (!render || !render.context) return;
             const ctx = render.context;
             const now = Date.now();
             const bodies = Composite.allBodies(engine.world);
@@ -1663,7 +1735,6 @@
                 }
             }
 
-            // Доминантный рендер пульсирующих контуров поверх стен и пола через оверлей-холст
             const overlayCanvas = document.getElementById('target-overlay-canvas');
             if (overlayCanvas && isTargetModeActive) {
                 overlayCanvas.style.display = 'block';
@@ -1749,6 +1820,7 @@
 
         function createMergeExplosion(x, y, isMax = false) {
             const canvasWrapper = document.getElementById('canvas-wrapper');
+            if (!canvasWrapper) return;
             
             if (isMax) {
                 const flash = document.createElement('div');
@@ -1794,17 +1866,20 @@
             if (isGameOver) return;
 
             if (isPaused) {
-                document.getElementById('leaderboard-modal').style.display = 'none';
+                const lb = document.getElementById('leaderboard-modal');
+                if (lb) lb.style.display = 'none';
                 closeSettings(event);
             } else {
                 isPaused = true;
-                document.getElementById('settings-modal').style.display = 'flex';
+                const sm = document.getElementById('settings-modal');
+                if (sm) sm.style.display = 'flex';
             }
         }
 
         function closeSettings(e) {
             if (e) e.stopPropagation();
-            document.getElementById('settings-modal').style.display = 'none';
+            const sm = document.getElementById('settings-modal');
+            if (sm) sm.style.display = 'none';
             
             setTimeout(() => {
                 isPaused = false;
@@ -1820,7 +1895,7 @@
             isMuted = !isMuted;
             const btn = document.getElementById('btn-sound');
             const t = translations[currentLang];
-            btn.innerText = isMuted ? t.sound_off : t.sound_on;
+            if (btn) btn.innerText = isMuted ? t.sound_off : t.sound_on;
         }
 
         function resetGameWrapper(e) {
@@ -1836,7 +1911,8 @@
             hasSavedCurrentRun = false;
             isTargetModeActive = false;
             
-            document.getElementById('target-mode-banner').style.display = 'none';
+            const banner = document.getElementById('target-mode-banner');
+            if (banner) banner.style.display = 'none';
             const overlay = document.getElementById('target-overlay-canvas');
             if (overlay) {
                 overlay.style.display = 'none';
@@ -1854,15 +1930,19 @@
                 boosterBadge.classList.remove('used');
             }
             
-            document.getElementById('settings-modal').style.display = 'none';
-            document.getElementById('game-over-screen').style.display = 'none';
-            document.getElementById('warning-screen').style.display = 'none';
+            const sm = document.getElementById('settings-modal');
+            const go = document.getElementById('game-over-screen');
+            const ws = document.getElementById('warning-screen');
+            if (sm) sm.style.display = 'none';
+            if (go) go.style.display = 'none';
+            if (ws) ws.style.display = 'none';
             
             document.querySelectorAll('.merge-glow, .merge-star, .epic-flash').forEach(el => el.remove());
 
             currentScore = 0;
             comboCount = 0;
-            document.getElementById('score-val').innerText = currentScore;
+            const scoreVal = document.getElementById('score-val');
+            if (scoreVal) scoreVal.innerText = currentScore;
             
             if (dropTimeoutId) {
                 clearTimeout(dropTimeoutId);
@@ -1887,6 +1967,7 @@
             mergeAnimations = [];
             isPaused = false;
             isWarningActive = false;
+            warningStartTime = 0;
             canDrop = true;
             isSpawnDelayed = false; 
             
@@ -1939,32 +2020,39 @@
         }
 
         function showLeaderboard() {
-            document.getElementById('settings-modal').style.display = 'none';
-            document.getElementById('leaderboard-modal').style.display = 'flex';
+            const sm = document.getElementById('settings-modal');
+            const lb = document.getElementById('leaderboard-modal');
+            if (sm) sm.style.display = 'none';
+            if (lb) lb.style.display = 'flex';
             renderLeaderboardUI();
         }
 
         function openLeaderboardFromGameOver(e) {
             if (e) e.stopPropagation();
             const nameInput = document.getElementById('player-nickname');
-            nameInput.value = currentPlayerName;
+            if (nameInput) nameInput.value = currentPlayerName;
             
             if (currentScore > 0 && !hasSavedCurrentRun) {
                 localLeaderboard.push({ name: currentPlayerName, score: currentScore });
                 hasSavedCurrentRun = true;
             }
 
-            document.getElementById('game-over-screen').style.display = 'none';
-            document.getElementById('leaderboard-modal').style.display = 'flex';
+            const go = document.getElementById('game-over-screen');
+            const lb = document.getElementById('leaderboard-modal');
+            if (go) go.style.display = 'none';
+            if (lb) lb.style.display = 'flex';
             renderLeaderboardUI();
         }
 
         function closeLeaderboard() {
-            document.getElementById('leaderboard-modal').style.display = 'none';
+            const lb = document.getElementById('leaderboard-modal');
+            if (lb) lb.style.display = 'none';
             if (isGameOver) {
-                document.getElementById('game-over-screen').style.display = 'flex';
+                const go = document.getElementById('game-over-screen');
+                if (go) go.style.display = 'flex';
             } else if (isPaused) {
-                document.getElementById('settings-modal').style.display = 'flex'; 
+                const sm = document.getElementById('settings-modal');
+                if (sm) sm.style.display = 'flex'; 
             }
         }
 
