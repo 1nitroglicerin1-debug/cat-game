@@ -555,7 +555,7 @@
     <div id="app-wrapper">
         <div id="top-panel">
             <div class="solid-panel score-box" id="score-box">
-                <span style="font-size:14px; margin-bottom:2px;">Счет: </span> <span id="score-val">0</span>
+                <span style="font-size:14px; margin-bottom:2px;" id="i18n-score-label">Счет: </span> <span id="score-val">0</span>
             </div>
             
             <div class="center-controls">
@@ -574,7 +574,7 @@
             </div>
 
             <div class="solid-panel next-box-container">
-                <div class="next-label">След.</div>
+                <div class="next-label" id="i18n-next-label">След.</div>
                 <div class="next-img-wrapper">
                     <img id="next-item-img" src="" alt="Next Cat">
                 </div>
@@ -695,10 +695,10 @@
             currentLang = lang;
             const t = translations[lang];
 
-            const scoreLabel = document.querySelector('#score-box span:first-child');
+            const scoreLabel = document.getElementById('i18n-score-label');
             if (scoreLabel) scoreLabel.innerText = t.score;
 
-            const nextLabel = document.querySelector('.next-label');
+            const nextLabel = document.getElementById('i18n-next-label');
             if (nextLabel) nextLabel.innerText = t.next;
 
             const pTitle = document.getElementById('i18n-pause-title');
@@ -798,7 +798,6 @@
 
         const Engine = Matter.Engine,
               Render = Matter.Render,
-              Runner = Matter.Runner,
               Bodies = Matter.Bodies,
               Composite = Matter.Composite,
               Events = Matter.Events,
@@ -806,7 +805,6 @@
 
         let engine;
         let render;
-        let runner;
         
         let currentScore = 0;
         let isGameOver = false;
@@ -815,7 +813,7 @@
         let activeDropper = null;
         let canDrop = true;
         let isSpawnDelayed = false; 
-        let dropCooldown = 600; 
+        let dropCooldown = 500; 
         let dropTimeoutId = null;
         let isInputSetup = false;
         
@@ -834,6 +832,8 @@
         let hasRevivedThisGame = false;
         let isTargetModeActive = false;
         let targetRemovalsLeft = 3;
+
+        let animationFrameId = null;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const audioBuffers = {};
@@ -930,12 +930,14 @@
         }
 
         function setupPhysicsWorld() {
-            engine = Engine.create();
+            engine = Engine.create({
+                enableSleeping: true
+            });
             engine.world.gravity.y = 1.8; 
             
-            engine.positionIterations = 10; 
-            engine.velocityIterations = 8;
-            engine.constraintIterations = 6;
+            // Повышенная точность для предотвращения проваливаний
+            engine.positionIterations = 16; 
+            engine.velocityIterations = 12;
 
             render = Render.create({
                 element: document.getElementById('canvas-wrapper'),
@@ -962,7 +964,7 @@
                     render: { visible: false }, 
                     friction: 1.0,       
                     frictionStatic: 1.0, 
-                    restitution: 0 
+                    restitution: 0.0 
                 }
             );
 
@@ -975,7 +977,7 @@
                     isStatic: true, 
                     render: { visible: false }, 
                     friction: 0.5, 
-                    restitution: 0 
+                    restitution: 0.0 
                 }
             );
             
@@ -988,7 +990,7 @@
                     isStatic: true, 
                     render: { visible: false }, 
                     friction: 0.5, 
-                    restitution: 0 
+                    restitution: 0.0 
                 }
             );
 
@@ -998,15 +1000,30 @@
 
             Render.run(render);
 
-            // Фиксация шага физики (isFixed: true, 60fps) для исключения слоу-мо на 120Hz ProMotion и Safari
-            runner = Runner.create({
-                isFixed: true,
-                delta: 1000 / 60
-            });
-            Runner.run(runner, engine);
+            // СОБСТВЕННЫЙ ФИКСИРОВАННЫЙ ЦИКЛ (Устраняет слоу-мо на iPhone)
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            let lastTime = performance.now();
+            const fixedDelta = 1000 / 60;
+
+            function gameLoop(currentTime) {
+                animationFrameId = requestAnimationFrame(gameLoop);
+                
+                if (!isGameOver && !isPaused) {
+                    let delta = currentTime - lastTime;
+                    if (delta > 200) delta = 200; // защита от долгих пауз вкладки
+                    
+                    // Шаг физики на фиксированный интервал, независимо от FPS Safari
+                    Engine.update(engine, fixedDelta);
+                    
+                    // Обновление логики игры
+                    updateGameLogic();
+                }
+                lastTime = currentTime;
+            }
+            animationFrameId = requestAnimationFrame(gameLoop);
 
             setupCollisions();
-            setupGameLoop(); 
         }
 
         function setupInput() {
@@ -1058,7 +1075,8 @@
             };
 
             const handleMove = (e) => {
-                if (e.type === 'touchmove' && e.cancelable) {
+                // Обязательно для iOS, чтобы safari не тупил при перетаскивании
+                if (e.cancelable) {
                     e.preventDefault();
                 }
 
@@ -1111,15 +1129,10 @@
                 
                 if (dropTimeoutId) clearTimeout(dropTimeoutId);
                 dropTimeoutId = setTimeout(() => {
-                    if (isGameOver) return;
-                    
-                    if (isPaused) {
-                        isSpawnDelayed = true;
-                    } else {
-                        if (!activeDropper) {
-                            spawnDropper();
-                            canDrop = true;
-                        }
+                    if (isGameOver || isPaused) return;
+                    if (!activeDropper) {
+                        spawnDropper();
+                        canDrop = true;
                     }
                 }, dropCooldown);
             };
@@ -1160,11 +1173,11 @@
                 isSensor: isStatic, 
                 label: levelIndex.toString(),
                 angle: customAngle,
-                restitution: 0.1,      
-                friction: 0.3,         
+                restitution: 0.0,      // НУЛЕВАЯ УПРУГОСТЬ исключает прыжки и пружинение
+                friction: 0.5,         
                 frictionStatic: 1.0,   
-                frictionAir: 0.005, 
-                slop: 0.05,          
+                frictionAir: 0.03,     // Быстрое гашение остаточных колебаний
+                slop: 0.02,            
                 render: { visible: false }
             });
             
@@ -1269,75 +1282,72 @@
             }, 150);
         }
 
-        function setupGameLoop() {
-            Events.on(engine, 'beforeUpdate', function() {
-                if (isGameOver) return;
-                const now = Date.now();
-                
-                for (let i = mergeAnimations.length - 1; i >= 0; i--) {
-                    const anim = mergeAnimations[i];
-                    if (now - anim.startTime >= anim.duration) {
-                        if (anim.newLevel !== null) {
-                            const newCat = createCatBody(anim.midX, anim.midY, anim.newLevel, false, anim.targetAngle);
-                            newCat.isMergeResult = true; 
-                            newCat.createdAt = now;
-                            if (anim.targetAngularVelocity) {
-                                Matter.Body.setAngularVelocity(newCat, anim.targetAngularVelocity);
-                            }
-                            Composite.add(engine.world, newCat);
+        function updateGameLogic() {
+            if (isGameOver) return;
+            const now = Date.now();
+            
+            for (let i = mergeAnimations.length - 1; i >= 0; i--) {
+                const anim = mergeAnimations[i];
+                if (now - anim.startTime >= anim.duration) {
+                    if (anim.newLevel !== null) {
+                        const newCat = createCatBody(anim.midX, anim.midY, anim.newLevel, false, anim.targetAngle);
+                        newCat.isMergeResult = true; 
+                        newCat.createdAt = now;
+                        if (anim.targetAngularVelocity) {
+                            Matter.Body.setAngularVelocity(newCat, anim.targetAngularVelocity);
                         }
-                        
-                        updateScore(anim.points);
-                        createMergeExplosion(anim.midX, anim.midY, anim.isMax);
-                        mergeAnimations.splice(i, 1);
+                        Composite.add(engine.world, newCat);
                     }
-                }
-
-                const bodies = Composite.allBodies(engine.world);
-                let anyBodyOverLine = false;
-
-                for (let i = 0; i < bodies.length; i++) {
-                    const body = bodies[i];
-                    if (body.isStatic || isNaN(parseInt(body.label))) continue;
                     
-                    const radius = CAT_LEVELS[parseInt(body.label)].radius;
-                    if ((body.position.y - radius * 0.2) < gameOverLineY && (body.speed < 0.5)) {
-                        if (Date.now() - body.createdAt > 1500) {
-                            anyBodyOverLine = true;
-                            break; 
-                        }
-                    }
+                    updateScore(anim.points);
+                    createMergeExplosion(anim.midX, anim.midY, anim.isMax);
+                    mergeAnimations.splice(i, 1);
                 }
+            }
 
-                if (anyBodyOverLine) {
-                    if (!isWarningActive) {
-                        isWarningActive = true;
-                        warningStartTime = Date.now();
-                        document.getElementById('warning-screen').style.display = 'flex';
-                        document.getElementById('warning-timer').innerText = '3';
-                    } else {
-                        const timeElapsed = Date.now() - warningStartTime;
-                        const timeLeft = Math.ceil((3000 - timeElapsed) / 1000);
-                        if (timeLeft <= 0) {
-                            triggerGameOver();
-                        } else {
-                            document.getElementById('warning-timer').innerText = timeLeft;
-                        }
-                    }
-                } else {
-                    if (isWarningActive) {
-                        isWarningActive = false;
-                        document.getElementById('warning-screen').style.display = 'none';
+            const bodies = Composite.allBodies(engine.world);
+            let anyBodyOverLine = false;
+
+            for (let i = 0; i < bodies.length; i++) {
+                const body = bodies[i];
+                if (body.isStatic || isNaN(parseInt(body.label))) continue;
+                
+                const radius = CAT_LEVELS[parseInt(body.label)].radius;
+                if ((body.position.y - radius * 0.2) < gameOverLineY && (body.speed < 0.5)) {
+                    if (Date.now() - body.createdAt > 1500) {
+                        anyBodyOverLine = true;
+                        break; 
                     }
                 }
-            });
+            }
+
+            if (anyBodyOverLine) {
+                if (!isWarningActive) {
+                    isWarningActive = true;
+                    warningStartTime = Date.now();
+                    document.getElementById('warning-screen').style.display = 'flex';
+                    document.getElementById('warning-timer').innerText = '3';
+                } else {
+                    const timeElapsed = Date.now() - warningStartTime;
+                    const timeLeft = Math.ceil((3000 - timeElapsed) / 1000);
+                    if (timeLeft <= 0) {
+                        triggerGameOver();
+                    } else {
+                        document.getElementById('warning-timer').innerText = timeLeft;
+                    }
+                }
+            } else {
+                if (isWarningActive) {
+                    isWarningActive = false;
+                    document.getElementById('warning-screen').style.display = 'none';
+                }
+            }
         }
 
         function triggerGameOver() {
             isGameOver = true;
             hasSavedCurrentRun = false;
             document.getElementById('warning-screen').style.display = 'none';
-            Matter.Runner.stop(runner);
             playSound('gameover'); 
             
             document.getElementById('final-score').innerText = currentScore;
@@ -1376,9 +1386,6 @@
             activeDropper = null;
             canDrop = true;
             isWarningActive = false;
-            
-            if (runner) runner.enabled = true;
-            Runner.run(runner, engine);
             
             rollNextCat();
             spawnDropper();
@@ -1791,7 +1798,6 @@
                 closeSettings(event);
             } else {
                 isPaused = true;
-                if (runner) runner.enabled = false; 
                 document.getElementById('settings-modal').style.display = 'flex';
             }
         }
@@ -1799,7 +1805,6 @@
         function closeSettings(e) {
             if (e) e.stopPropagation();
             document.getElementById('settings-modal').style.display = 'none';
-            if (runner) runner.enabled = true; 
             
             setTimeout(() => {
                 isPaused = false;
@@ -1864,7 +1869,6 @@
                 dropTimeoutId = null;
             }
 
-            if (runner) Runner.stop(runner);
             if (render) {
                 Render.stop(render);
                 if (render.canvas && render.canvas.parentNode) {
